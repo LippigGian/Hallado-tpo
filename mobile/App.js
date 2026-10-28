@@ -1,20 +1,7 @@
+import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
-
+import { AuthProvider } from './context/AuthContext';
+import AppNavigator from './navigation/AppNavigator';
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Astuta la comadreja!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+  return <AuthProvider><NavigationContainer><StatusBar style="dark" /><AppNavigator /></NavigationContainer></AuthProvider>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
