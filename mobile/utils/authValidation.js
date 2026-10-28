@@ -4,9 +4,10 @@ export function validateEmail(value) {
   return '';
 }
 
-// Regla provisional del formulario: acordar la misma política con el backend.
+// Misma longitud admitida por el backend.
 export function validatePassword(password, confirmation) {
   if (password.length < 8) return 'Usá al menos 8 caracteres.';
+  if (password.length > 128) return 'Usá hasta 128 caracteres.';
   if (!password.trim()) return 'La contraseña no puede contener solo espacios.';
   if (password !== confirmation) return 'Las contraseñas no coinciden.';
   return '';

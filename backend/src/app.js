@@ -1,8 +1,9 @@
+import { sessionRouter } from './session-routes.js';
 import { loginRouter } from './login-routes.js';
 import express from 'express';
 import { registrationRouter } from './registration-routes.js';
 
-export function createApp(database, registrationService, loginService) {
+export function createApp(database, registrationService, loginService, sessionTokens, recoveryService) {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '100kb' }));
@@ -26,7 +27,9 @@ export function createApp(database, registrationService, loginService) {
     }
   });
 
+  if (sessionTokens) app.use('/auth', sessionRouter(database, sessionTokens));
   if (loginService) app.use('/auth/login', loginRouter(loginService));
+  if (recoveryService) app.use('/auth/password-reset', registrationRouter(recoveryService));
   if (registrationService) app.use('/auth/register', registrationRouter(registrationService));
 
   app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada.' }));

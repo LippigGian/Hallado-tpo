@@ -3,8 +3,8 @@ import nodemailer from 'nodemailer';
 export function createRegistrationMailer(env = process.env) {
   const mode = env.MAIL_MODE || 'disabled';
   if (mode === 'console' && env.NODE_ENV !== 'production') {
-    return { async sendCode(email, code) {
-      console.log(`[SOLO DESARROLLO: no se envió email] Registro ${email}: ${code} (vence en 5 minutos)`);
+    return { async sendCode(email, code, purpose = 'register') {
+      console.log(`[SOLO DESARROLLO: no se envió email] ${purpose} ${email}: ${code} (vence en 5 minutos)`);
     } };
   }
   if (mode !== 'smtp') return null;
@@ -15,10 +15,10 @@ export function createRegistrationMailer(env = process.env) {
     auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
     connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000,
   });
-  return { async sendCode(email, code) {
+  return { async sendCode(email, code, purpose = 'register') {
     await transport.sendMail({ from: env.MAIL_FROM, to: email,
-      subject: 'Hallado: verificá tu email',
-      text: `Tu código de registro en Hallado es ${code}. Vence en 5 minutos. Si no lo solicitaste, ignorá este mensaje.`,
+      subject: purpose === 'password_reset' ? 'Hallado: recuperá tu contraseña' : 'Hallado: verificá tu email',
+      text: `Tu código de ${purpose === 'password_reset' ? 'recuperación' : 'registro'} en Hallado es ${code}. Vence en 5 minutos. Si no lo solicitaste, ignorá este mensaje.`,
     });
   } };
 }

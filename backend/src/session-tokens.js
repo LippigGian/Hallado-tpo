@@ -9,9 +9,9 @@ export function createSessionTokens(secret) {
   const ready = typeof secret === 'string' && secret.length >= 32;
   return {
     ready,
-    sign(userId) {
+    sign(userId, sessionVersion = 0) {
       if (!ready) throw new Error('JWT_SECRET no configurado.');
-      return jwt.sign({}, secret, { algorithm: 'HS256', subject: userId, issuer: ISSUER,
+      return jwt.sign({ ver: sessionVersion }, secret, { algorithm: 'HS256', subject: userId, issuer: ISSUER,
         audience: AUDIENCE, expiresIn: SESSION_SECONDS, jwtid: randomUUID() });
     },
     verify(token) {

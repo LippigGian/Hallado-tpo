@@ -1,3 +1,4 @@
+import { createRecoveryService } from './recovery-service.js';
 import { createLoginService } from './login-service.js';
 import { createSessionTokens } from './session-tokens.js';
 import { createRegistrationService } from './registration-service.js';
@@ -9,8 +10,10 @@ import { createApp } from './app.js';
 const config = readConfig();
 const database = createDatabase(config.databaseUrl);
 const registration = createRegistrationService(database, { secret: process.env.OTP_SECRET, mailer: createRegistrationMailer() });
-const login = createLoginService(database, createSessionTokens(process.env.JWT_SECRET));
-const app = createApp(database, registration, login);
+const sessionTokens = createSessionTokens(process.env.JWT_SECRET);
+const login = createLoginService(database, sessionTokens);
+const recovery = createRecoveryService(database, { secret: process.env.OTP_SECRET, mailer: createRegistrationMailer() });
+const app = createApp(database, registration, login, sessionTokens, recovery);
 const server = app.listen(config.port, '0.0.0.0', () => {
   console.log(`Hallado API: http://localhost:${config.port}/health`);
   if (!config.databaseUrl) console.log('PostgreSQL pendiente: configurar DATABASE_URL en backend/.env.');

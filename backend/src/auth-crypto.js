@@ -2,7 +2,7 @@ import { createHash, createHmac, randomBytes, randomInt, scrypt as scryptCallbac
 import { promisify } from 'node:util';
 const scrypt = promisify(scryptCallback);
 export const tokenHash = token => createHash('sha256').update(token).digest('hex');
-export const otpHash = (secret, email, code) => createHmac('sha256', secret).update(`register:${email}:${code}`).digest('hex');
+export const otpHash = (secret, email, code, purpose = 'register') => createHmac('sha256', secret).update(`${purpose}:${email}:${code}`).digest('hex');
 export const createOtp = () => String(randomInt(0, 1000000)).padStart(6, '0');
 export const createToken = () => randomBytes(32).toString('hex');
 export function equalHash(left, right) {

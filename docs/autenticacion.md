@@ -1,28 +1,27 @@
-# Autenticación: prototipo visual
+# Autenticación conectada a la API
 
-Implementado con JavaScript, React Native, React Navigation y hooks de React, siguiendo el material de clase.
+La app utiliza Axios, AuthContext, SecureStore y React Navigation siguiendo las clases. Registro y login son reales. Recuperación también está conectada; biometría sigue pendiente.
 
-## Probar
+## Ejecutar
 
-Desde `mobile/`: `npm ci` y `npx expo start --go`. Abrir Android con `a`.
+Terminal 1, desde `backend/`: `npm ci` y `npm run dev`. Requiere su `.env` privado con Neon, JWT_SECRET, OTP_SECRET y SMTP de Brevo. Reiniciar la API para cargar GET /auth/me.
 
-- Login: probar campos vacíos, email inválido y datos completos. No inicia sesión.
-- Registro: email -> código -> contraseña y confirmación -> fin del recorrido.
-- Recuperación: email -> código -> nueva contraseña y confirmación -> fin del recorrido.
-- Código demo: `123456`. Cualquier otro código debe mostrar un error.
-- Código incompleto: se requieren seis dígitos. Expira a los cinco minutos.
-- Reenvío: se habilita después de 30 segundos y reinicia la vigencia.
-- Cambiar email: vuelve al primer paso; continuar genera otro intento demo.
-- Contraseñas: mínimo provisional de ocho caracteres, no solo espacios, confirmación idéntica. Verificar mostrar/ocultar.
-- Probar volver con la flecha del encabezado y con el botón Android; terminar vuelve al Login.
-- Probar formulario con teclado abierto y en pantalla pequeña.
+Terminal 2, desde `mobile/`: `npm ci` y `npx expo start --go --clear`. Presionar `a` con el emulador encendido. SecureStore está incluido en Expo Go. Una development build anterior deberá recompilarse si todavía no contiene ese módulo.
 
-No se envían emails, no se crean cuentas, no se cambia ninguna contraseña y no se guardan contraseñas ni tokens. La demostración se identifica en las pantallas. Los tiempos y requisitos son provisionales.
+La URL está en `mobile/.env`: EXPO_PUBLIC_API_URL=http://10.0.2.2:3000 (Android Emulator). Para un teléfono físico usar la IP LAN de la PC; para producción usar HTTPS. Copiar `.env.example` si falta `.env`. Este archivo móvil contiene solo la URL pública: nunca copiar credenciales del backend aquí.
 
-## Pendiente para la integración
+## Probar en Android
 
-API propia y reglas del servidor, Axios y manejo de carga/errores HTTP, OTP real y límites de intentos/reenvío, AuthContext, SecureStore, expiración de sesión y configuración de desbloqueo biométrico. El servidor deberá decidir si el email y el OTP son válidos; las validaciones locales no otorgan acceso.
+1. Ingresar con email/contraseña existentes. Debe mostrar la pantalla de inicio provisoria con el email.
+2. Cerrar sesión. Debe regresar a Login y permitir ingresar otra vez.
+3. Cerrar/reabrir la app antes de una hora: restaura con SecureStore y consulta /auth/me para validar el token en el servidor. Si la API está apagada, no permite restaurar y muestra un mensaje.
+4. Crear cuenta con un email nuevo: solicitar código, buscar el email de Brevo, verificarlo y elegir contraseña. Esta acción crea un usuario real en Neon.
+5. Volver e ingresar con la nueva cuenta. Un email ya registrado da un error explícito.
+6. Probar contraseña incorrecta, campos vacíos, código inválido, reenvío anticipado y API apagada. Los errores no deben permitir entrar.
+7. Recuperación: solicitar código para una cuenta existente, verificar el email y cambiar contraseña. Ingresar con la nueva; la anterior debe fallar. Ver recuperacion-api.md.
 
-## Verificación realizada
+La sesión dura una hora y se borra al cerrar sesión. No hay refresh token ni revocación en el servidor todavía. Los tokens se mantienen en almacenamiento seguro; las contraseñas no se guardan. El permiso de registro se mantiene solo en memoria.
 
-Bundle Android generado correctamente y siete casos de validación de email/contraseña comprobados. La plantilla no tiene configurados lint ni typecheck. El recorrido táctil completo todavía debe probarse en el emulador siguiendo los casos anteriores.
+## Verificación automática realizada
+
+Bundle Android y compatibilidad de dependencias correctos. Diez tests backend y prueba HTTP/PostgreSQL de login pasaron, incluida validación de /auth/me para JWT válido, vencido, inválido y usuario inexistente. La plantilla móvil no tiene configurados scripts de lint/typecheck; no se agregaron herramientas ajenas a la clase. El recorrido táctil completo queda para la prueba en el emulador.

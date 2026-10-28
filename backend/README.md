@@ -78,3 +78,7 @@ La migración `002_registration_token.sql` agrega el hash del permiso de registr
 ## Login
 
 POST `/auth/login` valida las credenciales y devuelve JWT de una hora. Requiere JWT_SECRET en `.env`. Documentación y ejemplo PowerShell: `../docs/login-api.md`. Verificación integral contra PostgreSQL: `npm run test:login`.
+
+## Recuperación
+
+POST `/auth/password-reset/request-code`, `/verify-code` y `/complete`. Documentación: `../docs/recuperacion-api.md`. Aplicar migraciones antes de arrancar. Prueba integral: `npm run test:recovery`. El cambio de contraseña invalida las sesiones previas mediante session_version.

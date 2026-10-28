@@ -1,39 +1,44 @@
+import { useAuth } from '../context/AuthContext';
+import { getApiError } from '../services/api';
 import { useState } from 'react';
 import { validateEmail } from '../utils/authValidation';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen({ navigation }) {
+  const { login, sessionMessage } = useAuth();
+  const [busy, setBusy] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
 
-  function handleLogin() {
+  async function handleLogin() {
+    if (busy) return;
     const nextErrors = {};
     const emailError = validateEmail(email);
     if (emailError) nextErrors.email = emailError;
-    if (!password.trim()) nextErrors.password = 'Ingresá tu contraseña.';
+    if (!password) nextErrors.password = 'Ingresá tu contraseña.';
     setErrors(nextErrors);
-    // La validación del formulario no autentica al usuario.
-    // La sesión se iniciará cuando la API confirme las credenciales.
-    setMessage(Object.keys(nextErrors).length === 0
-      ? 'El inicio de sesión todavía no está disponible. Pronto vas a poder ingresar con tu cuenta.'
-      : '');
+    setMessage('');
+    if (Object.keys(nextErrors).length) return;
+    setBusy(true);
+    try { await login(email, password); setPassword(''); }
+    catch (error) { setMessage(getApiError(error)); }
+    finally { setBusy(false); }
   }
-
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.form}>
           <Text style={styles.brand}>HALLADO</Text>
-          <Text style={styles.demo}>Demostración: todavía no se autentican usuarios.</Text>
+          {!!sessionMessage && <Text style={styles.demo}>{sessionMessage}</Text>}
           <Text style={styles.title} accessibilityRole="header">Volvé a conectar.</Text>
           <Text style={styles.subtitle}>Ingresá para ayudar a que cada objeto y mascota encuentre su camino a casa.</Text>
 
           <Text style={styles.label}>Email</Text>
           <TextInput
             style={[styles.input, errors.email && styles.inputError]}
-            accessibilityLabel="Email"
+            editable={!busy} accessibilityLabel="Email"
             placeholder="nombre@ejemplo.com"
             placeholderTextColor="#68756F"
             value={email}
@@ -48,7 +53,7 @@ export default function LoginScreen({ navigation }) {
           <Text style={styles.label}>Contraseña</Text>
           <TextInput
             style={[styles.input, errors.password && styles.inputError]}
-            accessibilityLabel="Contraseña"
+            editable={!busy} accessibilityLabel="Contraseña"
             placeholder="Ingresá tu contraseña"
             placeholderTextColor="#68756F"
             value={password}
@@ -61,17 +66,17 @@ export default function LoginScreen({ navigation }) {
           />
           {errors.password && <Text style={styles.error} accessibilityLiveRegion="polite">{errors.password}</Text>}
 
-          <TouchableOpacity style={styles.recover} accessibilityRole="button" onPress={() => navigation.navigate('RecoverPassword')}>
+          <TouchableOpacity disabled={busy} style={styles.recover} accessibilityRole="button" onPress={() => navigation.navigate('RecoverPassword')}>
             <Text style={styles.link}>Olvidé mi contraseña</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.primaryButton} accessibilityRole="button" onPress={handleLogin}>
-            <Text style={styles.primaryText}>Ingresar</Text>
+          <TouchableOpacity disabled={busy} style={[styles.primaryButton, busy && { opacity: 0.6 }]} accessibilityRole="button" onPress={handleLogin}>
+            <Text style={styles.primaryText}>{busy ? 'Ingresando…' : 'Ingresar'}</Text>
           </TouchableOpacity>
           {!!message && <Text style={styles.message} accessibilityLiveRegion="polite">{message}</Text>}
 
           <View style={styles.separator} />
           <Text style={styles.signupPrompt}>¿Todavía no tenés una cuenta?</Text>
-          <TouchableOpacity style={styles.secondaryButton} accessibilityRole="button" onPress={() => navigation.navigate('Register')}>
+          <TouchableOpacity disabled={busy} style={styles.secondaryButton} accessibilityRole="button" onPress={() => navigation.navigate('Register')}>
             <Text style={styles.link}>Crear cuenta</Text>
           </TouchableOpacity>
         </View>
@@ -101,4 +106,3 @@ const styles = StyleSheet.create({
   signupPrompt: { fontSize: 15, color: '#52635B', textAlign: 'center', marginBottom: 12 },
   secondaryButton: { minHeight: 52, padding: 14, borderWidth: 1, borderColor: '#205B46', borderRadius: 10, justifyContent: 'center' },
 });
-
