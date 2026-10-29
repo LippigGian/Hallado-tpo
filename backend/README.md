@@ -82,3 +82,7 @@ POST `/auth/login` valida las credenciales y devuelve JWT de una hora. Requiere 
 ## Recuperación
 
 POST `/auth/password-reset/request-code`, `/verify-code` y `/complete`. Documentación: `../docs/recuperacion-api.md`. Aplicar migraciones antes de arrancar. Prueba integral: `npm run test:recovery`. El cambio de contraseña invalida las sesiones previas mediante session_version.
+
+## Perfiles
+
+Punto 2: edición privada, foto de galería, perfil público, reputación e insignias. Consultar `../docs/perfiles.md` para endpoints e integración interna con reclamos, devoluciones y valoraciones. Verificar con `npm run test:profiles`.

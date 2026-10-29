@@ -1,3 +1,4 @@
+import { createNativeActivityGuard } from '../services/nativeActivityGuard';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
@@ -14,6 +15,8 @@ export function AuthProvider({ children }) {
   const [sessionMessage, setSessionMessage] = useState('');
   const sessionRef = useRef(null);
   const authenticating = useRef(false);
+  const nativeActivity = useRef(null);
+  if (!nativeActivity.current) nativeActivity.current = createNativeActivityGuard();
 
   function updateSession(value) {
     sessionRef.current = value;
@@ -53,14 +56,15 @@ export function AuthProvider({ children }) {
     }
     restore();
     const interceptor = api.interceptors.response.use(response => response, async error => {
-      if (error.response?.status === 401 && error.config?.url === '/auth/me') {
+      if (error.response?.status === 401 && (error.config?.url === '/auth/me' || error.config?.url === '/profiles/me')) {
         await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
         if (active) { updateSession(null); setLocked(false); setSessionMessage('Tu sesión ya no es válida. Ingresá nuevamente.'); }
       }
       return Promise.reject(error);
     });
     const subscription = AppState.addEventListener('change', state => {
-      if (state === 'background' && sessionRef.current?.biometricEnabled && !authenticating.current) setLocked(true);
+      if (state === 'active') nativeActivity.current.onActive();
+      if (state === 'background' && sessionRef.current?.biometricEnabled && !authenticating.current && !nativeActivity.current.isActive()) setLocked(true);
       if (state === 'active' && sessionRef.current?.expiresAt <= Date.now()) {
         updateSession(null);
         setLocked(false);
@@ -129,6 +133,7 @@ export function AuthProvider({ children }) {
 
   return <AuthContext.Provider value={{ user: !locked ? session?.user || null : null,
     loading, locked, login, logout, sessionMessage, unlock,
+    runNativeActivity: operation => nativeActivity.current.run(operation, () => AppState.currentState),
     biometricEnabled: session?.biometricEnabled === true, setBiometricEnabled,
     lock: () => { if (sessionRef.current?.biometricEnabled) setLocked(true); },
   }}>{children}</AuthContext.Provider>;
