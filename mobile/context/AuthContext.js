@@ -1,18 +1,32 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createNativeActivityGuard } from '../services/nativeActivityGuard';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import * as LocalAuthentication from 'expo-local-authentication';
+import { authenticateBiometric } from '../services/biometricSupport';
 import { api, SESSION_KEY } from '../services/api';
 import { loginRequest } from '../services/authService';
 
 export const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
+  const [locked, setLocked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sessionMessage, setSessionMessage] = useState('');
+  const sessionRef = useRef(null);
+  const authenticating = useRef(false);
+  const nativeActivity = useRef(null);
+  if (!nativeActivity.current) nativeActivity.current = createNativeActivityGuard();
 
+  function updateSession(value) {
+    sessionRef.current = value;
+    setSession(value);
+  }
   async function logout() {
-    // Si falla el borrado, no fingir que la sesión persistida fue eliminada.
     await SecureStore.deleteItemAsync(SESSION_KEY);
-    setSession(null);
+    updateSession(null);
+    setLocked(false);
+    setSessionMessage('');
   }
 
   useEffect(() => {
@@ -26,9 +40,13 @@ export function AuthProvider({ children }) {
           await SecureStore.deleteItemAsync(SESSION_KEY);
           return;
         }
-        // El servidor verifica firma, expiración y existencia del usuario.
+        if (stored.biometricEnabled === true) {
+          // No exponer la navegación autenticada antes de comprobar la biometría.
+          if (active) { setLocked(true); updateSession(stored); }
+          return;
+        }
         const response = await api.get('/auth/me');
-        if (active) setSession({ ...stored, user: response.data.user });
+        if (active) updateSession({ ...stored, user: response.data.user });
       } catch (error) {
         if (error.response?.status === 401 || error instanceof SyntaxError) {
           await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
@@ -38,19 +56,30 @@ export function AuthProvider({ children }) {
     }
     restore();
     const interceptor = api.interceptors.response.use(response => response, async error => {
-      if (error.response?.status === 401 && error.config?.url === '/auth/me') {
+      if (error.response?.status === 401 && (error.config?.url === '/auth/me' || error.config?.url === '/profiles/me')) {
         await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
-        if (active) setSession(null);
+        if (active) { updateSession(null); setLocked(false); setSessionMessage('Tu sesión ya no es válida. Ingresá nuevamente.'); }
       }
       return Promise.reject(error);
     });
-    return () => { active = false; api.interceptors.response.eject(interceptor); };
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') nativeActivity.current.onActive();
+      if (state === 'background' && sessionRef.current?.biometricEnabled && !authenticating.current && !nativeActivity.current.isActive()) setLocked(true);
+      if (state === 'active' && sessionRef.current?.expiresAt <= Date.now()) {
+        updateSession(null);
+        setLocked(false);
+        setSessionMessage('Tu sesión venció. Ingresá nuevamente.');
+        SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
+      }
+    });
+    return () => { active = false; subscription.remove(); api.interceptors.response.eject(interceptor); };
   }, []);
 
   useEffect(() => {
     if (!session) return;
     const timer = setTimeout(() => {
-      setSession(null);
+      updateSession(null);
+      setLocked(false);
       setSessionMessage('Tu sesión venció. Ingresá nuevamente.');
       SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
     }, Math.max(0, session.expiresAt - Date.now()));
@@ -59,11 +88,54 @@ export function AuthProvider({ children }) {
 
   async function login(email, password) {
     const response = await loginRequest(email.trim().toLowerCase(), password);
-    const next = { token: response.token, user: response.user, expiresAt: Date.now() + response.expiresIn * 1000 };
+    const next = { token: response.token, user: response.user, expiresAt: Date.now() + response.expiresIn * 1000, biometricEnabled: false };
     await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(next));
     setSessionMessage('');
-    setSession(next);
+    setLocked(false);
+    updateSession(next);
   }
-  return <AuthContext.Provider value={{ user: session?.user || null, loading, login, logout, sessionMessage }}>{children}</AuthContext.Provider>;
+
+  async function biometricAction(action) {
+    if (authenticating.current) return;
+    authenticating.current = true;
+    try { await authenticateBiometric(LocalAuthentication); await action(); }
+    finally {
+      authenticating.current = false;
+      if (AppState.currentState === 'background' && sessionRef.current?.biometricEnabled) setLocked(true);
+    }
+  }
+
+  async function setBiometricEnabled(enabled) {
+    await biometricAction(async () => {
+      const current = sessionRef.current;
+      if (!current || current.expiresAt <= Date.now()) throw new Error('La sesión venció. Ingresá nuevamente.');
+      const next = { ...current, biometricEnabled: enabled };
+      await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(next));
+      updateSession(next);
+    });
+  }
+
+  async function unlock() {
+    await biometricAction(async () => {
+      const current = sessionRef.current;
+      if (!current || current.expiresAt <= Date.now()) {
+        await logout();
+        setSessionMessage('La sesión venció. Ingresá nuevamente.');
+        return;
+      }
+      // La huella desbloquea una sesión local; no reemplaza la validación del servidor.
+      const response = await api.get('/auth/me');
+      if (sessionRef.current?.token !== current.token) return;
+      updateSession({ ...current, user: response.data.user });
+      setLocked(false);
+    });
+  }
+
+  return <AuthContext.Provider value={{ user: !locked ? session?.user || null : null,
+    loading, locked, login, logout, sessionMessage, unlock,
+    runNativeActivity: operation => nativeActivity.current.run(operation, () => AppState.currentState),
+    biometricEnabled: session?.biometricEnabled === true, setBiometricEnabled,
+    lock: () => { if (sessionRef.current?.biometricEnabled) setLocked(true); },
+  }}>{children}</AuthContext.Provider>;
 }
 export function useAuth() { return useContext(AuthContext); }

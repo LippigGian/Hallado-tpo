@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const { user, logout } = useAuth();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -13,6 +13,10 @@ export default function HomeScreen() {
     <Text style={styles.title}>¡Bienvenido a Hallado!</Text>
     <Text style={styles.text}>Sesión iniciada como {user.email}</Text>
     <Text style={styles.text}>Esta pantalla provisoria permite comprobar la autenticación. Las publicaciones se incorporarán más adelante.</Text>
+    <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('Profile')}><Text style={styles.buttonText}>Mi perfil</Text></TouchableOpacity>
+    <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('Settings')}>
+      <Text style={styles.buttonText}>Configuración</Text>
+    </TouchableOpacity>
     <TouchableOpacity style={styles.button} accessibilityRole="button" disabled={busy} onPress={handleLogout}>
       <Text style={styles.buttonText}>{busy ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text>
     </TouchableOpacity>

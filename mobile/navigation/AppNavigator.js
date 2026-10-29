@@ -1,3 +1,8 @@
+import EditProfileScreen from '../screens/EditProfileScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import PublicProfileScreen from '../screens/PublicProfileScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import UnlockScreen from '../screens/UnlockScreen';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import HomeScreen from '../screens/HomeScreen';
@@ -9,7 +14,7 @@ import RecoverPasswordScreen from '../screens/RecoverPasswordScreen';
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const { user, loading } = useAuth();
+  const { user, loading, locked } = useAuth();
   if (loading) return <View style={{ flex:1, justifyContent:'center' }}><ActivityIndicator size="large" accessibilityLabel="Restaurando sesión" /></View>;
   return (
     <Stack.Navigator screenOptions={{
@@ -17,7 +22,13 @@ export default function AppNavigator() {
       headerTintColor: '#173F35',
       contentStyle: { backgroundColor: '#F6F8F7' },
     }}>
-      {user ? <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Hallado' }} /> : <>
+      {locked ? <Stack.Screen name="Unlock" component={UnlockScreen} options={{ title: 'Hallado', headerBackVisible:false }} /> : user ? <>
+        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Hallado' }} />
+        <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Mi perfil' }} />
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Editar perfil' }} />
+        <Stack.Screen name="PublicProfile" component={PublicProfileScreen} options={{ title: 'Perfil público' }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Configuración' }} />
+      </> : <>
       <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Hallado' }} />
       <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Crear cuenta' }} />
       <Stack.Screen name="RecoverPassword" component={RecoverPasswordScreen} options={{ title: 'Recuperar contraseña' }} />

@@ -1,6 +1,6 @@
 # Autenticación conectada a la API
 
-La app utiliza Axios, AuthContext, SecureStore y React Navigation siguiendo las clases. Registro y login son reales. Recuperación también está conectada; biometría sigue pendiente.
+La app utiliza Axios, AuthContext, SecureStore y React Navigation siguiendo las clases. Registro y login son reales. Recuperación también está conectada; el desbloqueo biométrico está implementado (ver biometria.md).
 
 ## Ejecutar
 

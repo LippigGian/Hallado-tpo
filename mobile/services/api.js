@@ -7,7 +7,7 @@ export const api = axios.create({
   timeout: 20000,
 });
 api.interceptors.request.use(async config => {
-  if (config.url === '/auth/me') {
+  if ((config.url === '/auth/me' || config.url === '/profiles/me')) {
     const saved = await SecureStore.getItemAsync(SESSION_KEY);
     const session = saved ? JSON.parse(saved) : null;
     if (session?.token) config.headers.Authorization = `Bearer ${session.token}`;
@@ -16,6 +16,11 @@ api.interceptors.request.use(async config => {
 });
 
 export function getApiError(error) {
+  if (!axios.isAxiosError(error)) {
+    if (__DEV__) console.warn('Hallado: error local al procesar la operación', error?.name, error?.message);
+    return 'No se pudo procesar la operación en la app. Intentá nuevamente.';
+  }
+  if (__DEV__) console.warn('Hallado: petición fallida', error.config?.method, error.config?.url, error.code, error.response?.status);
   if (typeof error.response?.data?.error === 'string') return error.response.data.error;
   if (error.code === 'ECONNABORTED') return 'La API tardó demasiado. Intentá nuevamente.';
   if (!error.response) return 'No pudimos conectar con la API. Comprobá que el backend esté encendido y la dirección sea correcta.';
