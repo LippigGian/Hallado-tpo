@@ -40,3 +40,7 @@ git switch -c feature/nombre-de-la-funcionalidad
 Subir la rama y abrir un Pull Request hacia `main`. Después de actualizar dependencias del proyecto, ejecutar `npm ci` dentro de `mobile/`.
 
 No subir `node_modules`, `.expo`, archivos `.env`, credenciales ni respaldos locales.
+
+## Guía para el equipo
+
+Ver [el instructivo completo para levantar el proyecto](docs/README-equipo.md), con configuración del backend, Expo y Android.
