@@ -3,6 +3,7 @@ import { sessionRouter } from './session-routes.js';
 import { loginRouter } from './login-routes.js';
 import express from 'express';
 import { registrationRouter } from './registration-routes.js';
+import { publicationRouter } from './publication-routes.js';
 
 export function createApp(database, registrationService, loginService, sessionTokens, recoveryService) {
   const app = express();
@@ -33,6 +34,7 @@ export function createApp(database, registrationService, loginService, sessionTo
   if (loginService) app.use('/auth/login', loginRouter(loginService));
   if (recoveryService) app.use('/auth/password-reset', registrationRouter(recoveryService));
   if (registrationService) app.use('/auth/register', registrationRouter(registrationService));
+  if (sessionTokens) app.use('/publications', publicationRouter(database, sessionTokens));
 
   app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada.' }));
   app.use((error, req, res, next) => {
