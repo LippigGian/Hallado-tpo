@@ -86,3 +86,7 @@ POST `/auth/password-reset/request-code`, `/verify-code` y `/complete`. Document
 ## Perfiles
 
 Punto 2: edición privada, foto de galería, perfil público, reputación e insignias. Consultar `../docs/perfiles.md` para endpoints e integración interna con reclamos, devoluciones y valoraciones. Verificar con `npm run test:profiles`.
+
+## Publicaciones
+
+Punto 3: búsqueda guiada y resultados paginados (`GET /publications`, `GET /publications/:id/photos/:photoId`). La migración `006_publications.sql` define el modelo que usarán los puntos 3, 4 y 5. Como todavía no existe el alta real, `npm run db:seed` carga publicaciones de prueba. Consultar `../docs/buscador-resultados.md` para endpoints, integración con el resto del equipo y cómo probar desde Android. Verificar con `npm run test:publications` (requiere la 006 aplicada).
