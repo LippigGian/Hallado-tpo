@@ -32,10 +32,11 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let active = true;
     async function restore() {
+      let stored = null;
       try {
         const raw = await SecureStore.getItemAsync(SESSION_KEY);
         if (!raw) return;
-        const stored = JSON.parse(raw);
+        stored = JSON.parse(raw);
         if (!stored.token || !Number.isFinite(stored.expiresAt) || stored.expiresAt <= Date.now()) {
           await SecureStore.deleteItemAsync(SESSION_KEY);
           return;
@@ -50,6 +51,11 @@ export function AuthProvider({ children }) {
       } catch (error) {
         if (error.response?.status === 401 || error instanceof SyntaxError) {
           await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
+        } else if (error?.isAxiosError && !error.response && stored?.user) {
+          // Modo sin conexión (punto 6): sin red se conserva la sesión guardada para
+          // poder ver la información almacenada. Se valida con el servidor al volver a usar la API.
+          if (active) updateSession(stored);
+          return;
         }
         if (active) setSessionMessage('No se pudo restaurar la sesión. Ingresá nuevamente.');
       } finally { if (active) setLoading(false); }
