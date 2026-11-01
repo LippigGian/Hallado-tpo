@@ -2,6 +2,7 @@ import EditProfileScreen from '../screens/EditProfileScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import PublicProfileScreen from '../screens/PublicProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import OfflineDemoScreen from '../screens/OfflineDemoScreen';
 import UnlockScreen from '../screens/UnlockScreen';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +29,7 @@ export default function AppNavigator() {
         <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Editar perfil' }} />
         <Stack.Screen name="PublicProfile" component={PublicProfileScreen} options={{ title: 'Perfil público' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Configuración' }} />
+        <Stack.Screen name="OfflineDemo" component={OfflineDemoScreen} options={{ title: 'Modo sin conexión (prueba)' }} />
       </> : <>
       <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Hallado' }} />
       <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Crear cuenta' }} />
