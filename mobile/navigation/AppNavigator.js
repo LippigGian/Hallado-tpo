@@ -5,9 +5,12 @@ import MeetingPointDemoScreen from '../screens/MeetingPointDemoScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import OfflineDemoScreen from '../screens/OfflineDemoScreen';
 import UnlockScreen from '../screens/UnlockScreen';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import HomeScreen from '../screens/HomeScreen';
+import SearchScreen from '../screens/SearchScreen';
+import SearchResultsScreen from '../screens/SearchResultsScreen';
+import PendingFeatureScreen from '../screens/PendingFeatureScreen';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -25,7 +28,15 @@ export default function AppNavigator() {
       contentStyle: { backgroundColor: '#F6F8F7' },
     }}>
       {locked ? <Stack.Screen name="Unlock" component={UnlockScreen} options={{ title: 'Hallado', headerBackVisible:false }} /> : user ? <>
-        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Hallado' }} />
+        <Stack.Screen name="Search" component={SearchScreen} options={({ navigation }) => ({
+          title: 'Buscar',
+          headerRight: () => <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Home')}>
+            <Text style={{ color:'#205B46', fontWeight:'600', fontSize:16 }}>Menú</Text>
+          </TouchableOpacity>,
+        })} />
+        <Stack.Screen name="SearchResults" component={SearchResultsScreen} options={{ title: 'Resultados' }} />
+        <Stack.Screen name="Publish" component={PendingFeatureScreen} options={{ title: 'Publicar' }} />
+        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Menú' }} />
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Mi perfil' }} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Editar perfil' }} />
         <Stack.Screen name="PublicProfile" component={PublicProfileScreen} options={{ title: 'Perfil público' }} />
