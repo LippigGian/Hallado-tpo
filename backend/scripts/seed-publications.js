@@ -28,7 +28,7 @@ const SAMPLE_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAA
 
 const USER = i => `5eed0000-0000-4000-8000-10000000000${i}`;
 const PUB = i => `5eed0000-0000-4000-8000-2000000000${String(i).padStart(2, '0')}`;
-const PHOTO = (pubIndex, photoIndex) => `5eed0000-0000-4000-8000-3${String(pubIndex).padStart(2, '0')}${photoIndex}000000`;
+const PHOTO = (pubIndex, photoIndex) => `5eed0000-0000-4000-8000-${`3${String(pubIndex).padStart(2, '0')}${photoIndex}`.padEnd(12, '0')}`;
 const REP = i => `5eed0000-0000-4000-8000-40000000000${i}`;
 
 const SEED_USERS = [

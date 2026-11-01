@@ -56,7 +56,7 @@ try {
   check(plaza.body.results.some(r => r.id === foundElectronics), true);
 
   // Rango de fechas.
-  const ranged = await request(`/publications?situation=lost&from=${lastWeek}&to=${today}`);
+  const ranged = await request(`/publications?situation=lost&from=${lastWeek}&to=${today}&page_size=30`);
   check(ranged.body.results.some(r => r.id === foundOld), false);
   check(ranged.body.results.some(r => r.id === foundKeys), true);
 
@@ -66,8 +66,8 @@ try {
   check(found.approx_longitude, -58.43);
   for (const field of ['latitude', 'longitude', 'exact_address', 'publisher_id']) check(field in found, false);
 
-  // Orden por cercanía.
-  const nearest = await request('/publications?situation=lost&sort=nearest&lat=-34.5780&lng=-58.4265');
+  // Orden por cercanía (page_size grande: hay más publicaciones de ejemplo que el tamaño de página por defecto).
+  const nearest = await request('/publications?situation=lost&sort=nearest&lat=-34.5780&lng=-58.4265&page_size=30');
   check(nearest.status, 200);
   const ids = nearest.body.results.map(r => r.id);
   check(ids.indexOf(foundKeys) < ids.indexOf(foundOld), true);
