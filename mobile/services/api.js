@@ -7,7 +7,7 @@ export const api = axios.create({
   timeout: 20000,
 });
 api.interceptors.request.use(async config => {
-  if ((config.url === '/auth/me' || config.url === '/profiles/me')) {
+  if (config.url === '/auth/me' || config.url === '/profiles/me' || config.url?.startsWith('/publications')) {
     const saved = await SecureStore.getItemAsync(SESSION_KEY);
     const session = saved ? JSON.parse(saved) : null;
     if (session?.token) config.headers.Authorization = `Bearer ${session.token}`;

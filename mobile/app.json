@@ -35,6 +35,12 @@
           "cameraPermission": false,
           "microphonePermission": false
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Permitir que Hallado use tu ubicación para sugerir tu barrio y ordenar los resultados por cercanía."
+        }
       ]
     ]
   }
