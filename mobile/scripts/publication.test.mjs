@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { stepsFor } from '../config/publicationOptions.js';
 import { formatDateTime, maskDate, maskTime, parseDateTime } from '../utils/dateTime.js';
 import { buildPayload, emptyForm, validateStep } from '../utils/publicationValidation.js';
+import { looksLikeImage, normalizePhoto, photoToBase64, PhotoReadError } from '../utils/photos.js';
 
 const now = new Date(2026, 10, 1, 15, 0); // 01/11/2026 15:00 hora local
 
@@ -10,7 +11,7 @@ function filledForm(overrides = {}) {
   return {
     ...emptyForm(now),
     type: 'lost',
-    photos: ['file:///foto-1.jpg'],
+    photos: [{ uri: 'file:///foto-1.jpg', base64: '/9j/4AAQ' }],
     title: 'Llaves con llavero azul',
     description: 'Perdí un llavero con tres llaves en la plaza.',
     category: 'keys',
@@ -84,10 +85,30 @@ test('buildPayload arma el cuerpo de la API', () => {
   assert.equal(lost.title, 'Llaves');
   assert.equal(lost.latitude, -34.6);
   assert.equal('verification_question' in lost, false);
-  assert.deepEqual(lost.photos, ['file:///foto-1.jpg']);
+  assert.deepEqual(lost.photos, [{ uri: 'file:///foto-1.jpg', base64: '/9j/4AAQ' }]);
   assert.equal(new Date(lost.occurred_at).getTime(), new Date(2026, 9, 31, 18, 30).getTime());
 
   const found = buildPayload(filledForm({ type: 'found', verification_question: '¿Color?', verification_answer: ' Azul ' }));
   assert.equal(found.verification_answer, 'Azul');
   assert.equal('latitude' in found, false);
+});
+
+test('looksLikeImage reconoce JPEG y PNG en base64 y descarta lecturas fallidas', () => {
+  assert.equal(looksLikeImage('/9j/4AAQSkZJRg=='), true);
+  assert.equal(looksLikeImage('iVBORw0KGgoAAAANSUhEUg=='), true);
+  for (const value of ['', null, undefined, 'data:image/jpeg;base64,/9j/4AAQ', 'R0lGODlh', 'AAAA']) {
+    assert.equal(looksLikeImage(value), false, String(value));
+  }
+});
+
+test('normalizePhoto acepta una URI suelta o un objeto', () => {
+  assert.deepEqual(normalizePhoto('file:///a.jpg'), { uri: 'file:///a.jpg' });
+  assert.deepEqual(normalizePhoto({ uri: 'file:///a.jpg', base64: 'x' }), { uri: 'file:///a.jpg', base64: 'x' });
+});
+
+test('photoToBase64 usa el base64 del selector y falla con un mensaje claro si la foto no es legible', async () => {
+  assert.equal(await photoToBase64({ uri: 'file:///a.jpg', base64: '/9j/4AAQSkZJRg==' }), '/9j/4AAQSkZJRg==');
+  // Sin base64 se intenta leer el archivo; en este entorno no existe, así que debe fallar con PhotoReadError.
+  await assert.rejects(() => photoToBase64('file:///no-existe.jpg'), error => error instanceof PhotoReadError && /Quitala/.test(error.message));
+  await assert.rejects(() => photoToBase64({ uri: 'file:///a.jpg', base64: 'texto-cualquiera' }), PhotoReadError);
 });

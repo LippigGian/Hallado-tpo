@@ -158,5 +158,5 @@ En Postman: pestaña Authorization → Bearer Token, y `POST /publications` con 
 
 ## Limitaciones conocidas
 
-- Verificado: pruebas unitarias, prueba integral contra PostgreSQL y bundle de Android con Metro. **No se probó en un emulador ni en un teléfono**: cámara, galería, ubicación y lectura de las fotos (`utils/photos.js`) son lo primero a revisar en la prueba manual.
-- El borrador guarda las URIs de las fotos, no las imágenes: si Android limpia la caché, la app pide quitar y volver a agregar esa foto al publicar.
+- Verificado: pruebas unitarias, prueba integral contra PostgreSQL y bundle de Android con Metro. **No se probó en un emulador ni en un teléfono**: cámara, galería y ubicación son lo primero a revisar en la prueba manual.
+- Las fotos se envían con el base64 que entrega expo-image-picker al elegirlas (como en Editar perfil). El borrador guarda solo las URIs, no las imágenes: al retomar un borrador, la app intenta leer cada archivo y, si no puede, pide quitar y volver a agregar esa foto antes de publicar.
