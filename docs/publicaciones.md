@@ -95,14 +95,14 @@ App (`mobile/`):
 - **Buscador, resultados y alertas (puntos 3 y 9)**: leen `public.publications` (índice `publications_search_idx` sobre estado, tipo y fecha). Para mostrar cada resultado se puede reutilizar `serializePublication` y `PublicationCard`. Las categorías están en `config/publicationOptions.js`.
 - **Detalle (punto 4)**: `GET /publications/:id` ya existe y devuelve `is_owner`. Falta la pantalla; desde "Mis publicaciones" se le puede pasar `onPress` a `PublicationCard`.
 - **Reclamos (punto 7)**: usar `status = 'claimed'` / `'resolved'` (ya permitidos por la restricción) y `serializePublication(row, viewerId, { exactLocation: true })` para mostrar la dirección a quien tenga un reclamo aceptado. `createRequireSession` sirve para las rutas nuevas.
-- **Modo sin conexión (punto 6)**: la rama `feature/modo-offline` espera `registrarEnviadorPublicaciones(...)`. Con esta rama, la ruta es `/publications` y el envío se hace con `createPublication`, que acepta las fotos como URIs locales:
+- **Modo sin conexión (punto 6)**: ya está en `main`. Todavía **no está conectado** con esta pantalla: si publicar falla por falta de red, el borrador queda guardado y se puede reintentar, pero no se encola como "pendiente de envío". Para conectarlo falta (1) registrar el enviador al iniciar la app, con la ruta `/publications` y no `/publicaciones` como dice `docs/modo-offline.md`, y (2) llamar a `encolarPublicacion` cuando `useConnectivity().isOnline` sea `false`:
 
   ```js
+  import { registrarEnviadorPublicaciones } from '../services/offline/pendingPublications';
   import { createPublication } from '../services/publicationService';
+  // `datos` es lo que devuelve buildPayload(form); encolarPublicacion espera las fotos en `fotos`.
   registrarEnviadorPublicaciones(({ fotos, ...campos }) => createPublication({ ...campos, photos: fotos }));
   ```
-
-  Mientras tanto, si publicar falla por falta de conexión, el borrador queda guardado y se puede reintentar.
 
 ## Cómo probar
 
