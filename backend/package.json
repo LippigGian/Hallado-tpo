@@ -12,10 +12,12 @@
     "test": "node --test",
     "db:check": "node --env-file-if-exists=.env src/check-db.js",
     "db:migrate": "node --env-file-if-exists=.env src/migrate.js",
+    "db:seed": "node --env-file-if-exists=.env scripts/seed-publications.js",
     "test:registration": "node --env-file-if-exists=.env scripts/check-registration.js",
     "test:login": "node --env-file-if-exists=.env scripts/check-login.js",
     "test:recovery": "node --env-file-if-exists=.env scripts/check-recovery.js",
-    "test:profiles": "node --env-file-if-exists=.env scripts/check-profiles.js"
+    "test:profiles": "node --env-file-if-exists=.env scripts/check-profiles.js",
+    "test:publications": "node --env-file-if-exists=.env scripts/check-publications.js"
   },
   "dependencies": {
     "express": "^5.3.0",
