@@ -1,6 +1,7 @@
 import EditProfileScreen from '../screens/EditProfileScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import PublicProfileScreen from '../screens/PublicProfileScreen';
+import MeetingPointDemoScreen from '../screens/MeetingPointDemoScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import OfflineDemoScreen from '../screens/OfflineDemoScreen';
 import UnlockScreen from '../screens/UnlockScreen';
@@ -28,6 +29,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Mi perfil' }} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Editar perfil' }} />
         <Stack.Screen name="PublicProfile" component={PublicProfileScreen} options={{ title: 'Perfil público' }} />
+        <Stack.Screen name="MeetingPointDemo" component={MeetingPointDemoScreen} options={{ title: 'Punto de encuentro (prueba)' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Configuración' }} />
         <Stack.Screen name="OfflineDemo" component={OfflineDemoScreen} options={{ title: 'Modo sin conexión (prueba)' }} />
       </> : <>
