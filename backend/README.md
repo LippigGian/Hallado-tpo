@@ -90,3 +90,8 @@ Punto 2: edición privada, foto de galería, perfil público, reputación e insi
 ## Publicaciones
 
 Punto 3: búsqueda guiada y resultados paginados (`GET /publications`, `GET /publications/:id/photos/:photoId`). La migración `006_publications.sql` define el modelo que usarán los puntos 3, 4 y 5. Como todavía no existe el alta real, `npm run db:seed` carga publicaciones de prueba. Consultar `../docs/buscador-resultados.md` para endpoints, integración con el resto del equipo y cómo probar desde Android. Verificar con `npm run test:publications` (requiere la 006 aplicada).
+Punto 5: alta de pérdidas y hallazgos con fotos, "Mis publicaciones", vencimiento a los 30 días y renovación. Migración `006_publications.sql`; endpoints, privacidad y pruebas en `../docs/publicaciones.md`. Verificar con `npm test` y, con la migración aplicada, `npm run test:publications`.
+
+## Reclamos
+
+Punto 7: reclamos "Es mío" y "Lo encontré", aceptar o rechazar, máximo 3 intentos y vencimiento a 48 horas. Migración `007_claims.sql`; endpoints, reglas y pruebas en `../docs/reclamos.md`. Verificar con `npm test` y, con la migración aplicada, `npm run test:claims`.

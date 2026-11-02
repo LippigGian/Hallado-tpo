@@ -4,7 +4,7 @@ import { AppState } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { authenticateBiometric } from '../services/biometricSupport';
-import { api, SESSION_KEY } from '../services/api';
+import { api, requiresSession, SESSION_KEY } from '../services/api';
 import { loginRequest } from '../services/authService';
 
 export const AuthContext = createContext(null);
@@ -62,7 +62,7 @@ export function AuthProvider({ children }) {
     }
     restore();
     const interceptor = api.interceptors.response.use(response => response, async error => {
-      if (error.response?.status === 401 && (error.config?.url === '/auth/me' || error.config?.url === '/profiles/me')) {
+      if (error.response?.status === 401 && requiresSession(error.config?.url)) {
         await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
         if (active) { updateSession(null); setLocked(false); setSessionMessage('Tu sesión ya no es válida. Ingresá nuevamente.'); }
       }

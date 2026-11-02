@@ -6,8 +6,19 @@ export const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3000',
   timeout: 20000,
 });
+
+const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/password-reset'];
+export function requiresSession(url = '') {
+  return !PUBLIC_PATHS.some(path => url.startsWith(path));
+}
+
+export function apiUrl(path) {
+  return path ? `${api.defaults.baseURL.replace(/\/$/, '')}${path}` : null;
+}
+
 api.interceptors.request.use(async config => {
   if (config.url === '/auth/me' || config.url === '/profiles/me' || config.url?.startsWith('/publications')) {
+  if (requiresSession(config.url)) {
     const saved = await SecureStore.getItemAsync(SESSION_KEY);
     const session = saved ? JSON.parse(saved) : null;
     if (session?.token) config.headers.Authorization = `Bearer ${session.token}`;

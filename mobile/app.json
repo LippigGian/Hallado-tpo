@@ -31,8 +31,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Permitir seleccionar una foto de perfil para Hallado.",
-          "cameraPermission": false,
+          "photosPermission": "Permitir seleccionar fotos de perfil y de objetos o mascotas para Hallado.",
+          "cameraPermission": "Permitir tomar fotos de objetos o mascotas para publicarlos en Hallado.",
           "microphonePermission": false
         }
       ],
@@ -40,6 +40,7 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Permitir que Hallado use tu ubicación para sugerir tu barrio y ordenar los resultados por cercanía."
+          "locationWhenInUsePermission": "Permitir usar tu ubicación para cargar las coordenadas del lugar de una pérdida o un hallazgo."
         }
       ]
     ]

@@ -6,6 +6,13 @@ import SettingsScreen from '../screens/SettingsScreen';
 import OfflineDemoScreen from '../screens/OfflineDemoScreen';
 import UnlockScreen from '../screens/UnlockScreen';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import PublishPublicationScreen from '../screens/PublishPublicationScreen';
+import MyPublicationsScreen from '../screens/MyPublicationsScreen';
+import CreateClaimScreen from '../screens/CreateClaimScreen';
+import MyClaimsScreen from '../screens/MyClaimsScreen';
+import ClaimDetailScreen from '../screens/ClaimDetailScreen';
+import ClaimDemoScreen from '../screens/ClaimDemoScreen';
+import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
@@ -43,6 +50,12 @@ export default function AppNavigator() {
         <Stack.Screen name="MeetingPointDemo" component={MeetingPointDemoScreen} options={{ title: 'Punto de encuentro (prueba)' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Configuración' }} />
         <Stack.Screen name="OfflineDemo" component={OfflineDemoScreen} options={{ title: 'Modo sin conexión (prueba)' }} />
+        <Stack.Screen name="PublishPublication" component={PublishPublicationScreen} options={{ title: 'Nueva publicación' }} />
+        <Stack.Screen name="MyPublications" component={MyPublicationsScreen} options={{ title: 'Mis publicaciones' }} />
+        <Stack.Screen name="CreateClaim" component={CreateClaimScreen} options={{ title: 'Reclamar' }} />
+        <Stack.Screen name="MyClaims" component={MyClaimsScreen} options={{ title: 'Mis reclamos' }} />
+        <Stack.Screen name="ClaimDetail" component={ClaimDetailScreen} options={{ title: 'Detalle del reclamo' }} />
+        <Stack.Screen name="ClaimDemo" component={ClaimDemoScreen} options={{ title: 'Reclamar (prueba)' }} />
       </> : <>
       <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Hallado' }} />
       <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Crear cuenta' }} />
