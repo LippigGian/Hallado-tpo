@@ -33,7 +33,8 @@ export const FRANJAS = [
 
 export const ESTADOS = [
   { id: 'open', etiqueta: 'Abierta' },
-  { id: 'in_claim', etiqueta: 'En reclamo' },
+  { id: 'claimed', etiqueta: 'En reclamo' },
+  { id: 'expired', etiqueta: 'Vencida' },
   { id: 'resolved', etiqueta: 'Resuelta' },
 ];
 

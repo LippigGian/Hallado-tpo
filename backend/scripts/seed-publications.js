@@ -1,6 +1,6 @@
-// Datos de ejemplo para probar el buscador (punto 3) y el detalle (punto 4) sin que
-// exista todavía la carga real de publicaciones (punto 5). No crea un endpoint POST:
-// inserta directamente por SQL en una base compartida por el equipo.
+// Datos de ejemplo para probar el buscador (punto 3) y el detalle (punto 4) sin cargar
+// publicaciones a mano desde la app (punto 5). Inserta directamente por SQL en la base
+// compartida por el equipo, con el esquema de 006_publications.sql.
 //
 // Uso (desde backend/, con DATABASE_URL configurado en .env):
 //   npm run db:seed                  -> inserta/actualiza las 24 publicaciones de prueba
@@ -73,7 +73,7 @@ const ROWS = [
   ['found', 'pets', 'Perrita mestiza negra con collar rojo', 'Villa Crespo', 0, 'morning', 'open', 3],
   ['found', 'clothing', 'Campera de jean talle M', 'Belgrano', 5, 'afternoon', 'open', 1],
   ['found', 'other', 'Paraguas verde plegable', 'Recoleta', 9, 'morning', 'open', 0],
-  ['found', 'keys', 'Llave de auto con control', 'San Telmo', 3, 'night', 'in_claim', 1],
+  ['found', 'keys', 'Llave de auto con control', 'San Telmo', 3, 'night', 'claimed', 1],
   ['found', 'electronics', 'Celular con funda azul', 'Palermo', 6, 'afternoon', 'open', 2],
   ['found', 'documents', 'Carpeta con apuntes de facultad', 'Flores', 15, 'morning', 'resolved', 1],
   ['found', 'pets', 'Gato atigrado con cascabel', 'Boedo', 1, 'night', 'open', 2],
@@ -84,7 +84,7 @@ const ROWS = [
   ['lost', 'electronics', 'Notebook gris en estuche', 'Almagro', 4, 'afternoon', 'open', 2],
   ['lost', 'pets', 'Perro beagle llamado Toto', 'Villa Crespo', 2, 'night', 'open', 3],
   ['lost', 'clothing', 'Saco azul de vestir', 'San Telmo', 6, 'night', 'open', 1],
-  ['lost', 'other', 'Anteojos recetados marco rojo', 'Belgrano', 1, 'morning', 'in_claim', 1],
+  ['lost', 'other', 'Anteojos recetados marco rojo', 'Belgrano', 1, 'morning', 'claimed', 1],
   ['lost', 'electronics', 'Tablet con funda verde', 'Flores', 8, 'afternoon', 'open', 1],
   ['lost', 'pets', 'Gata blanca con manchas negras', 'Boedo', 3, 'early_morning', 'open', 2],
   ['lost', 'documents', 'Licencia de conducir', 'Caballito', 12, 'morning', 'resolved', 0],
@@ -96,6 +96,12 @@ const ROWS = [
 function isoDaysAgo(days, now = new Date()) {
   const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - days);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Hora representativa de cada franja, en hora de Buenos Aires.
+const SLOT_HOUR = { early_morning: '03', morning: '09', afternoon: '15', night: '21' };
+function occurredAt(daysAgo, timeSlot) {
+  return `${isoDaysAgo(daysAgo)}T${SLOT_HOUR[timeSlot]}:00:00-03:00`;
 }
 
 function exactLocation(neighborhood, index) {
@@ -167,15 +173,18 @@ async function main() {
       if (isOwnTest && ownerId) assignedToOwner++;
       const location = exactLocation(neighborhood, i);
       const description = `Publicación de prueba generada por el seed (${type === 'found' ? 'hallazgo' : 'pérdida'}).`;
+      // Los hallazgos llevan pregunta y respuesta de verificación (la exige la tabla).
+      const question = type === 'found' ? '¿Qué tiene de particular?' : null;
+      const answer = type === 'found' ? 'Dato de prueba' : null;
       await client.query(
         `INSERT INTO public.publications
-          (id,publisher_id,type,category,title,description,neighborhood,occurred_on,time_slot,status,exact_address,latitude,longitude)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-        [PUB(i + 1), publisherId, type, category, title, description, neighborhood, isoDaysAgo(daysAgo), timeSlot, status, location.address, location.lat, location.lng],
+          (id,user_id,type,category,title,description,neighborhood,occurred_at,status,address,latitude,longitude,verification_question,verification_answer)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+        [PUB(i + 1), publisherId, type, category, title, description, neighborhood, occurredAt(daysAgo, timeSlot), status, location.address, location.lat, location.lng, question, answer],
       );
       for (let p = 0; p < photoCount; p++) {
         await client.query(
-          `INSERT INTO public.publication_photos(id,publication_id,position,photo_data,photo_mime) VALUES ($1,$2,$3,$4,'image/png')`,
+          `INSERT INTO public.publication_photos(id,publication_id,sort_order,data,mime) VALUES ($1,$2,$3,$4,'image/png')`,
           [PHOTO(i + 1, p), PUB(i + 1), p, SAMPLE_PNG],
         );
       }

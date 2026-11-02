@@ -39,8 +39,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Permitir que Hallado use tu ubicación para sugerir tu barrio y ordenar los resultados por cercanía."
-          "locationWhenInUsePermission": "Permitir usar tu ubicación para cargar las coordenadas del lugar de una pérdida o un hallazgo."
+          "locationWhenInUsePermission": "Permitir que Hallado use tu ubicación para cargar el lugar de una pérdida o un hallazgo, sugerir tu barrio y ordenar los resultados por cercanía."
         }
       ]
     ]

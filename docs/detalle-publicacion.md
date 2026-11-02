@@ -34,11 +34,11 @@ Agrega la migración `007_publication_follows.sql`.
 
 ## Integración con las partes del grupo
 
-- **Punto 7 (Reclamos)**: reemplazar el `component` de `ClaimStart` en `AppNavigator.js`
-  (hoy `PendingFeatureScreen`) por la pantalla real. `canSeeExactLocation` en
-  `backend/src/publication-access.js` está preparada para ampliarse a "o contraparte de un
-  reclamo aceptado", con el mismo criterio que `claim_contact_access` del punto 2.
-- **Punto 5 (Publicar)**: reemplazar el `component` de `ManagePublication`.
+- **Punto 7 (Reclamos)**: `ClaimStart` abre `CreateClaimScreen`. `canSeeExactLocation`
+  (`backend/src/publication-access.js`) muestra la dirección exacta a quien publica y a quien
+  tiene un reclamo aceptado. El detalle incluye `verification_question` e `is_owner`, que usa
+  el formulario de reclamo.
+- **Punto 5 (Publicar)**: `ManagePublication` abre "Mis publicaciones".
 - **Punto 9 (Alertas y publicaciones seguidas)**: `publication_follows` (migración 007) ya
   guarda quién sigue qué; falta la pantalla "Seguidas" y el indicador de novedades.
 - **Punto 8 (Punto de encuentro)**: el botón "Cómo llegar" no está en este detalle: depende
@@ -47,7 +47,7 @@ Agrega la migración `007_publication_follows.sql`.
 ## Verificación
 
 Desde `backend/`: `npm test` (28 tests con mocks, sin PostgreSQL) y, con la base de
-desarrollo disponible, `npm run test:publications` (46 comprobaciones contra PostgreSQL
+desarrollo disponible, `npm run test:search` (46 comprobaciones contra PostgreSQL
 real, incluye búsqueda y detalle). Desde `mobile/`: `node --test "scripts/*.test.mjs"`
 (23 tests). Se verificó además contra un PostgreSQL local descartable (Docker) y el bundle
 de Expo compila sin errores.

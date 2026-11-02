@@ -70,7 +70,7 @@ define el punto 5).
   | `page`, `page_size` | por defecto 1 y 10 (máximo 30) | no |
 
   La búsqueda siempre devuelve el tipo **opuesto** a `situation`, y solo publicaciones con
-  estado `open` o `in_claim` (las resueltas se ven únicamente en el detalle, punto 4).
+  estado `open` sin vencer o `claimed` (las resueltas se ven únicamente en el detalle, punto 4).
 
   Ejemplo:
   ```powershell
@@ -88,7 +88,7 @@ define el punto 5).
     "page": 1, "page_size": 5, "total": 12, "has_more": true
   }
   ```
-  Nunca incluye `latitude`, `longitude`, `exact_address` ni `publisher_id`: esas columnas
+  Nunca incluye `latitude`, `longitude`, `address`, `user_id` ni `verification_answer`: esas columnas
   son privadas (ver el punto 4 para la dirección exacta).
 
 - `GET /publications/:id/photos/:photoId`: pública, sirve la foto (`image/jpeg` o
@@ -96,16 +96,10 @@ define el punto 5).
 
 ## Integración con las partes del grupo
 
-- **Punto 5 (Publicar)**: la migración `006_publications.sql` define las columnas y
-  constraints que necesita el alta real (`type`, `category`, `title`, `description`,
-  `neighborhood`, `occurred_on`, `time_slot`, `status`, `exact_address`, `latitude`,
-  `longitude`). Las columnas `approx_latitude`/`approx_longitude` son `GENERATED` (se
-  calculan solas a partir de `latitude`/`longitude`): no hay que cargarlas. Las fotos van
-  en `publication_photos` con `position` 0 a 4. Falta agregar `POST /publications` (a
-  propósito, no se implementó acá para no definir ese contrato por otra rama) y una
-  columna `expires_at` para el vencimiento a los 30 días. La ruta de navegación `Publish`
-  ya existe (con `PendingFeatureScreen` como placeholder) y recibe
-  `{ tipo, categoria, barrio }` desde "sin resultados".
+- **Punto 5 (Publicar)**: el alta (`POST /publications`), "Mis publicaciones" y la
+  renovación son del punto 5 y comparten la tabla con el buscador (ver la sección
+  "Integración con el punto 5" al final). La ruta `Publish` abre la pantalla real de
+  publicación desde "sin resultados".
 - **Punto 9 (Alertas y publicaciones seguidas)**: "Guardar búsqueda como alerta" quedó
   implementado 100% del lado del cliente (`mobile/services/search/recentSearches.js`,
   clave `hallado.busquedas.<userId>` en AsyncStorage, con un flag `guardada:true` por
@@ -120,13 +114,13 @@ define el punto 5).
 ## Verificación
 
 Desde `backend/`: `npm test` (mockea la base, no necesita PostgreSQL) y, con una base de
-desarrollo disponible y las migraciones aplicadas, `npm run test:publications` (22
+desarrollo disponible y las migraciones aplicadas, `npm run test:search` (22
 comprobaciones HTTP/PostgreSQL con datos temporales dentro de una transacción que se
 revierte). Desde `mobile/`: `node --test "scripts/*.test.mjs"` prueba los criterios de
 búsqueda y los barrios sin depender de React Native.
 
 Todo lo anterior se verificó contra un PostgreSQL local descartable (contenedor Docker, no
-la base compartida del equipo): migración, seed, `test:publications` (22 verificaciones) y
+la base compartida del equipo): migración, seed, `test:search` (22 verificaciones) y
 la app corriendo en un emulador Android real (registro, login, búsqueda guiada, tipo
 opuesto, filtro de barrio, fecha y últimas búsquedas persistidas).
 
@@ -135,3 +129,17 @@ generar bytes de imagen reales). El backend la sirve correctamente (200, `image/
 el componente `Image` de React Native no siempre la renderiza y cae al placeholder
 "Sin foto" — es una limitación del PNG mínimo, no del buscador. Con fotos reales (una vez
 que el punto 5 las cargue) no debería reproducirse.
+
+## Integración con el punto 5 (esquema único de publicaciones)
+
+El buscador y el detalle usan la tabla `publications` de `006_publications.sql` del punto 5
+(`user_id`, `occurred_at`, `address`, `sort_order`/`mime`/`data` en las fotos, estados
+`open`/`claimed`/`resolved` y vencimiento con `expires_at`). Los campos que muestra la app
+se calculan en la consulta, sin columnas duplicadas:
+
+- `occurred_on` y `time_slot`: fecha y franja horaria de `occurred_at` en hora de Buenos Aires
+  (madrugada antes de las 6, mañana antes de las 12, tarde antes de las 19, noche después).
+- `approx_latitude` / `approx_longitude`: coordenadas redondeadas a 2 decimales (~1 km).
+- `status`: `expired` cuando una publicación `open` pasó su `expires_at`.
+
+La dirección exacta la ven quien publica y quien tiene un reclamo aceptado (punto 7).

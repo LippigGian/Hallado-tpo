@@ -33,8 +33,11 @@ function makeDatabase({ searchRows = [], searchError = false } = {}) {
   const calls = [];
   const database = {
     calls,
+    // Los reclamos vencidos se actualizan antes de cada consulta (punto 7).
+    async transaction(run) { return run(database); },
     async query(sql, values) {
       calls.push({ sql, values });
+      if (/UPDATE public\.claims SET status = 'expired'/.test(sql)) return { rowCount: 0, rows: [] };
       if (/FROM public\.users WHERE id=\$1/.test(sql)) {
         if (values[0] === userId) return { rowCount: 1, rows: [{ id: userId, session_version: 0 }] };
         if (values[0] === otherVersionUserId) return { rowCount: 1, rows: [{ id: otherVersionUserId, session_version: 7 }] };
@@ -93,8 +96,8 @@ test('los filtros agregan condiciones SQL y la paginación arma LIMIT/OFFSET', a
   const { sql, values } = database.calls.at(-1);
   assert.match(sql, /p\.category=\$2/);
   assert.match(sql, /lower\(p\.neighborhood\)=lower\(\$3\)/);
-  assert.match(sql, /p\.occurred_on>=\$4::date/);
-  assert.match(sql, /p\.occurred_on<=\$5::date/);
+  assert.match(sql, /\(p\.occurred_at AT TIME ZONE 'America\/Argentina\/Buenos_Aires'\)::date>=\$4::date/);
+  assert.match(sql, /\(p\.occurred_at AT TIME ZONE 'America\/Argentina\/Buenos_Aires'\)::date<=\$5::date/);
   assert.match(sql, /LIMIT \$6 OFFSET \$7/);
   assert.deepEqual(values, ['found', 'keys', 'Palermo', '2026-10-01', '2026-10-31', 5, 5]);
 });
@@ -117,7 +120,7 @@ test('el buscador solo muestra abiertas/en reclamo y puede ordenar por cercanía
   const filters = parseSearchQuery({ situation: 'lost', sort: 'nearest', lat: '-34.58', lng: '-58.43' });
   const response = await searchPublications(database, filters);
   const { sql } = database.calls.at(-1);
-  assert.match(sql, /status IN \('open','in_claim'\)/);
+  assert.match(sql, /\(p\.status='claimed' OR \(p\.status='open' AND p\.expires_at>now\(\)\)\)/);
   assert.match(sql, /ORDER BY distance_km ASC/);
   assert.equal(response.results[0].distance_km, 1.2);
 });
@@ -130,8 +133,8 @@ test('la respuesta arma las URLs de fotos y nunca expone datos privados', async 
   assert.equal(response.total, 12);
   assert.equal(response.has_more, true);
   assert.deepEqual(response.results[0].photos, [{ id: '00000000-0000-4000-8000-0000000000b1', url: photoUrl('00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000b1') }]);
-  for (const field of ['latitude', 'longitude', 'exact_address', 'publisher_id']) assert.equal(field in response.results[0], false);
-  assert.doesNotMatch(database.calls.at(-1).sql, /exact_address/);
+  for (const field of ['latitude', 'longitude', 'address', 'user_id', 'verification_answer']) assert.equal(field in response.results[0], false);
+  assert.doesNotMatch(database.calls.at(-1).sql, /p\.address|verification_answer/);
 });
 
 // 7. Autenticación opcional en GET /publications.
@@ -176,8 +179,8 @@ test('GET /publications/:id/photos/:photoId sirve la foto o responde 400/404', a
   const bytes = Buffer.from('89504e470d0a1a0a', 'hex');
   const database = {
     async query(sql, values) {
-      if (/FROM public\.publication_photos WHERE id=\$1 AND publication_id=\$2/.test(sql)) {
-        if (values[0] === photoId && values[1] === publicationId) return { rowCount: 1, rows: [{ photo_data: bytes, photo_mime: 'image/png' }] };
+      if (/FROM public\.publication_photos WHERE publication_id = \$1 AND id = \$2/.test(sql)) {
+        if (values[0] === publicationId && values[1] === photoId) return { rowCount: 1, rows: [{ data: bytes, mime: 'image/png' }] };
         return { rowCount: 0, rows: [] };
       }
       throw new Error(`Consulta inesperada: ${sql}`);

@@ -2,7 +2,7 @@
 // desde services/search/searchCriteria.js porque un test puro no puede importar ese módulo.
 const CATEGORIAS = { documents: 'Documentos', keys: 'Llaves', electronics: 'Electrónica', pets: 'Mascotas', clothing: 'Ropa', other: 'Otros' };
 const FRANJAS = { early_morning: 'Madrugada', morning: 'Mañana', afternoon: 'Tarde', night: 'Noche' };
-const ESTADOS = { open: 'Abierta', in_claim: 'En reclamo', resolved: 'Resuelta' };
+const ESTADOS = { open: 'Abierta', claimed: 'En reclamo', expired: 'Vencida', resolved: 'Resuelta' };
 
 export function etiquetaTipo(tipo) {
   return tipo === 'found' ? 'Encontrado' : 'Perdido';
