@@ -15,6 +15,8 @@ export default function HomeScreen({ navigation }) {
     <Text style={styles.text}>Esta pantalla provisoria permite comprobar la autenticación. Las publicaciones se incorporarán más adelante.</Text>
     <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('PublishPublication')}><Text style={styles.buttonText}>Publicar pérdida o hallazgo</Text></TouchableOpacity>
     <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('MyPublications')}><Text style={styles.buttonText}>Mis publicaciones</Text></TouchableOpacity>
+    <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('MyClaims')}><Text style={styles.buttonText}>Mis reclamos</Text></TouchableOpacity>
+    <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('ClaimDemo')}><Text style={styles.buttonText}>Reclamar (prueba)</Text></TouchableOpacity>
     <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('Profile')}><Text style={styles.buttonText}>Mi perfil</Text></TouchableOpacity>
     <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('MeetingPointDemo')}>
       <Text style={styles.buttonText}>Punto de encuentro (prueba)</Text>

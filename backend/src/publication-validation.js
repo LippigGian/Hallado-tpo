@@ -1,4 +1,5 @@
 import { parseImage } from './image-validation.js';
+import { isMissing, textError } from './text-validation.js';
 
 export const PUBLICATION_TYPES = ['lost', 'found'];
 export const CATEGORIES = ['documents', 'keys', 'electronics', 'pets', 'clothing', 'other'];
@@ -20,17 +21,6 @@ const ALLOWED_FIELDS = [
 ];
 const CLOCK_TOLERANCE_MS = 5 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-function textError(value, label, [min, max]) {
-  if (typeof value !== 'string') return `Completá ${label}.`;
-  const length = value.trim().length;
-  const sentence = label.charAt(0).toUpperCase() + label.slice(1);
-  return length < min || length > max ? `${sentence} debe tener entre ${min} y ${max} caracteres.` : '';
-}
-
-function isMissing(value) {
-  return value === undefined || value === null || value === '';
-}
 
 function dateError(date, now) {
   if (Number.isNaN(date.getTime())) return 'Ingresá una fecha y hora válidas para el suceso.';
