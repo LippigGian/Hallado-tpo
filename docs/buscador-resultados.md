@@ -127,4 +127,11 @@ búsqueda y los barrios sin depender de React Native.
 
 Todo lo anterior se verificó contra un PostgreSQL local descartable (contenedor Docker, no
 la base compartida del equipo): migración, seed, `test:publications` (22 verificaciones) y
-la app corriendo en un emulador Android real.
+la app corriendo en un emulador Android real (registro, login, búsqueda guiada, tipo
+opuesto, filtro de barrio, fecha y últimas búsquedas persistidas).
+
+**Nota del seed:** las fotos de prueba reutilizan un PNG de 1×1 válido (para no depender de
+generar bytes de imagen reales). El backend la sirve correctamente (200, `image/png`), pero
+el componente `Image` de React Native no siempre la renderiza y cae al placeholder
+"Sin foto" — es una limitación del PNG mínimo, no del buscador. Con fotos reales (una vez
+que el punto 5 las cargue) no debería reproducirse.
