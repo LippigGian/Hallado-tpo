@@ -179,7 +179,8 @@ test('la respuesta nunca expone campos privados ni el historial de agradecimient
   await withServer(database, async base => {
     const response = await fetch(`${base}/publications/${publicationRow().id}`);
     const { publication } = await response.json();
-    for (const field of ['latitude', 'longitude', 'address', 'user_id', 'verification_answer']) assert.equal(field in publication, false);
+    for (const field of ['latitude', 'longitude', 'user_id', 'verification_answer']) assert.equal(field in publication, false);
+    assert.equal(publication.address, null);
     assert.equal(publication.verification_question, '¿De qué color es el llavero?');
     for (const field of ['email', 'phone']) assert.equal(field in publication.publisher, false);
     assert.equal('thanks' in publication.publisher.reputation, false);
@@ -235,6 +236,7 @@ test('con reclamo aceptado se ve la dirección exacta, nunca la respuesta de ver
     const response = await fetch(`${base}/publications/${publicationRow().id}`, { headers: { Authorization: `Bearer ${tokens.sign(viewerId, 0)}` } });
     const { publication } = await response.json();
     assert.equal(publication.exact_location.address, 'Honduras 4800');
+    assert.equal(publication.address, 'Honduras 4800');
     assert.equal('verification_answer' in publication, false);
     assert.equal(publication.is_owner, false);
   });

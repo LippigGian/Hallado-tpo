@@ -64,6 +64,8 @@ export async function loadPublicationDetail(database, id, viewerId) {
       created_at: row.publisher_created_at,
       reputation,
     },
+    // `address` lo usa el reclamo (punto 7) y `exact_location` la pantalla de detalle (punto 4).
+    address: canSeeExact ? row.address : null,
     exact_location: canSeeExact ? { address: row.address, latitude: row.latitude, longitude: row.longitude } : null,
     viewer: {
       authenticated: Boolean(viewerId),

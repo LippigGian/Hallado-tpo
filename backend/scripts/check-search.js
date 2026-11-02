@@ -104,7 +104,8 @@ try {
   check(anonDetail.status, 200);
   check(anonDetail.body.publication.exact_location, null);
   check(anonDetail.body.publication.viewer.can_claim, false);
-  for (const field of ['latitude', 'longitude', 'address', 'user_id', 'verification_answer']) check(field in anonDetail.body.publication, false);
+  for (const field of ['latitude', 'longitude', 'user_id', 'verification_answer']) check(field in anonDetail.body.publication, false);
+  check(anonDetail.body.publication.address, null);
 
   const thirdDetail = await request(`/publications/${foundKeys}`, { token: viewerToken });
   check(thirdDetail.body.publication.viewer.can_claim, true);

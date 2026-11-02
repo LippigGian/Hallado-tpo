@@ -100,8 +100,10 @@ try {
   check(asOther.status, 200);
   check(asOther.body.publication.is_owner, false);
   check(asOther.body.publication.address, null);
-  check(asOther.body.publication.latitude, -34.619);
-  check(asOther.body.publication.longitude, -58.437);
+  // El detalle (punto 4) no expone latitude/longitude: solo coordenadas aproximadas a ~1 km.
+  check('latitude' in asOther.body.publication, false);
+  check(asOther.body.publication.approx_latitude, -34.62);
+  check(asOther.body.publication.approx_longitude, -58.44);
   const foundAsOther = (await request(`/publications/${foundResult.body.publication.id}`, { token: other })).body.publication;
   check('verification_answer' in foundAsOther, false);
   check(foundAsOther.verification_question, '¿De qué color es el llavero?');
