@@ -1,10 +1,5 @@
-// Acceso a datos de publicaciones. No sabe nada de HTTP: lo usan las rutas y lo pueden reutilizar
-// otros módulos (buscador, reclamos, alertas) sin duplicar consultas.
-
 export const PUBLICATION_DAYS = 30;
 
-// "expired" no existe en la tabla: se calcula acá, en un único lugar, para que todos los módulos
-// vean el mismo estado. Una publicación abierta cuyo vencimiento pasó se muestra como vencida.
 const SELECT_PUBLICATION = `
   SELECT p.id, p.user_id, p.type, p.title, p.description, p.category, p.occurred_at,
          p.neighborhood, p.address, p.latitude, p.longitude,
@@ -22,7 +17,6 @@ export async function findPublication(database, id) {
   return result.rows[0] || null;
 }
 
-// Hasta 100 publicaciones del usuario, las más nuevas primero.
 export async function listUserPublications(database, userId) {
   const result = await database.query(
     `${SELECT_PUBLICATION} WHERE p.user_id = $1 ORDER BY p.created_at DESC LIMIT 100`,
@@ -31,7 +25,6 @@ export async function listUserPublications(database, userId) {
   return result.rows;
 }
 
-// `data` es el resultado de validatePublication(...).value.
 export async function createPublication(database, userId, data) {
   const id = await database.transaction(async client => {
     const inserted = await client.query(
@@ -45,7 +38,6 @@ export async function createPublication(database, userId, data) {
         data.verification_question, data.verification_answer, PUBLICATION_DAYS],
     );
     const publicationId = inserted.rows[0].id;
-    // Las fotos se insertan en orden: sort_order define cuál es la portada (la 0).
     for (const [index, photo] of data.photos.entries()) {
       await client.query(
         'INSERT INTO public.publication_photos (publication_id, sort_order, mime, data) VALUES ($1, $2, $3, $4)',
@@ -57,9 +49,6 @@ export async function createPublication(database, userId, data) {
   return findPublication(database, id);
 }
 
-// Renueva 30 días más. Solo quien publicó, y solo si la publicación sigue abierta o venció
-// (una en reclamo o resuelta no se renueva).
-// Resultado: { outcome: 'renewed', publication } | { outcome: 'not_found' } | { outcome: 'conflict' }
 export async function renewPublication(database, id, userId) {
   const updated = await database.query(
     `UPDATE public.publications

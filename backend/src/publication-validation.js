@@ -3,7 +3,6 @@ import { parseImage } from './image-validation.js';
 export const PUBLICATION_TYPES = ['lost', 'found'];
 export const CATEGORIES = ['documents', 'keys', 'electronics', 'pets', 'clothing', 'other'];
 
-// Mismos límites que la app (mobile/config/publicationOptions.js) y que las restricciones de la migración 006.
 export const LIMITS = {
   title: [3, 80],
   description: [10, 1000],
@@ -22,7 +21,6 @@ const ALLOWED_FIELDS = [
 const CLOCK_TOLERANCE_MS = 5 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// `label` va en minúscula ("el título"); si falta el dato o no cumple el largo, devuelve el mensaje para mostrar.
 function textError(value, label, [min, max]) {
   if (typeof value !== 'string') return `Completá ${label}.`;
   const length = value.trim().length;
@@ -61,8 +59,6 @@ function verificationError(body) {
     || textError(body.verification_answer, 'la respuesta de verificación', LIMITS.answer);
 }
 
-// Valida y normaliza el cuerpo de POST /publications.
-// Devuelve { error } con el primer problema encontrado, o { value } listo para guardar.
 export function validatePublication(body, now = new Date()) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return { error: 'Enviá los datos de la publicación.' };

@@ -8,7 +8,6 @@ import {
 } from './publication-service.js';
 import { serializePublication } from './publication-view.js';
 
-// 5 fotos de hasta 2 MB en base64 ocupan unos 14 MB. Solo la ruta de creación acepta un cuerpo tan grande.
 const CREATE_BODY_LIMIT = '15mb';
 
 function limiter(windowMs, limit, message) {
@@ -19,8 +18,6 @@ export function publicationRouter(database, tokens) {
   const router = Router();
   const requireSession = createRequireSession(database, tokens);
 
-  // Las fotos son públicas (la app las muestra con <Image source={{ uri }}>) y se piden de a muchas
-  // en un listado: tienen un límite propio y se pueden cachear porque una foto nunca cambia.
   router.get('/:id/photos/:photoId',
     limiter(60_000, 300, 'Demasiadas solicitudes de fotos. Intentá más tarde.'),
     async (req, res) => {
@@ -42,7 +39,6 @@ export function publicationRouter(database, tokens) {
   });
   router.use(limiter(60_000, 100, 'Demasiadas solicitudes. Intentá más tarde.'));
 
-  // "Mis publicaciones": todas las propias, con su estado (abierta, en reclamo, resuelta o vencida).
   router.get('/mine', requireSession, async (req, res) => {
     try {
       const rows = await listUserPublications(database, req.userId);
@@ -52,7 +48,6 @@ export function publicationRouter(database, tokens) {
     }
   });
 
-  // Detalle. Quien no es dueño no recibe la dirección exacta ni la respuesta de verificación.
   router.get('/:id', requireSession, async (req, res) => {
     if (!isUuid(req.params.id)) return res.status(400).json({ error: 'Identificador inválido.' });
     try {
@@ -64,7 +59,6 @@ export function publicationRouter(database, tokens) {
     }
   });
 
-  // Crear: máximo 20 por hora desde una misma conexión, para frenar abuso.
   router.post('/',
     limiter(60 * 60_000, 20, 'Publicaste demasiadas veces seguidas. Intentá más tarde.'),
     requireSession,

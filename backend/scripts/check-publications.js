@@ -1,6 +1,3 @@
-// Prueba integral del punto 5 contra PostgreSQL real (HTTP + base de datos).
-// Todo ocurre dentro de una transacción que se revierte al final: no deja datos en la base compartida.
-// Requisito: haber aplicado la migración 006 (npm run db:migrate, coordinado con el grupo).
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { randomUUID } from 'node:crypto';
@@ -13,7 +10,6 @@ if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) throw new Error('Falta
 const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await client.connect();
 await client.query('BEGIN');
-// La transacción externa ya envuelve todo: "transaction" solo reutiliza el mismo cliente.
 const database = { query: (sql, values) => client.query(sql, values), transaction: callback => callback(client) };
 const tokens = createSessionTokens(process.env.JWT_SECRET);
 const server = createApp(database, undefined, undefined, tokens).listen(0, '127.0.0.1');
@@ -56,12 +52,10 @@ try {
   const owner = tokens.sign(ownerId);
   const other = tokens.sign(otherId);
 
-  // --- Sesión
   check((await request('/publications/mine')).status, 401);
   check((await request('/publications', { method: 'POST', body: lost() })).status, 401);
   check((await request('/publications/mine', { token: 'token-falso' })).status, 401);
 
-  // --- Crear una pérdida
   const created = await request('/publications', { method: 'POST', token: owner, body: lost() });
   check(created.status, 201);
   const mine = created.body.publication;
@@ -72,12 +66,10 @@ try {
   check(mine.address, 'Av. Rivadavia 5000');
   check(Math.round(days(new Date(mine.expires_at) - Date.now())), 30);
 
-  // --- Crear un hallazgo: guarda la respuesta privada
   const foundResult = await request('/publications', { method: 'POST', token: owner, body: found() });
   check(foundResult.status, 201);
   check(foundResult.body.publication.verification_answer, 'Azul');
 
-  // --- Validaciones del servidor
   const invalid = [
     [found({ verification_question: undefined }), /verificación/],
     [found({ verification_answer: '' }), /verificación/],
@@ -98,15 +90,12 @@ try {
   }
   check((await request('/publications', { method: 'POST', token: owner, body: [] })).status, 400);
 
-  // --- Mis publicaciones: solo las propias, la más nueva primero
-  // Dentro de una misma transacción now() es constante: se separa la fecha de la primera para que haya orden.
   await client.query("UPDATE public.publications SET created_at = now() - interval '1 hour' WHERE id = $1", [mine.id]);
   const list = await request('/publications/mine', { token: owner });
   check(list.status, 200);
   check(list.body.publications.map(item => item.type), ['found', 'lost']);
   check((await request('/publications/mine', { token: other })).body.publications, []);
 
-  // --- Privacidad del detalle
   const asOther = await request(`/publications/${mine.id}`, { token: other });
   check(asOther.status, 200);
   check(asOther.body.publication.is_owner, false);
@@ -120,7 +109,6 @@ try {
   check((await request(`/publications/${randomUUID()}`, { token: owner })).status, 404);
   check((await request('/publications/no-es-uuid', { token: owner })).status, 400);
 
-  // --- Fotos: públicas, con el tipo detectado por contenido
   const [png, jpeg] = mine.photos;
   const pngResponse = await fetch(base + png.url);
   check(pngResponse.status, 200);
@@ -130,7 +118,6 @@ try {
   check((await fetch(`${base}/publications/${mine.id}/photos/${randomUUID()}`)).status, 404);
   check((await fetch(`${base}/publications/${foundResult.body.publication.id}${png.url.slice(png.url.lastIndexOf('/photos'))}`)).status, 404);
 
-  // --- Vencimiento y renovación
   await client.query("UPDATE public.publications SET expires_at = now() - interval '1 minute' WHERE id = $1", [mine.id]);
   check((await request(`/publications/${mine.id}`, { token: owner })).body.publication.status, 'expired');
   check((await request(`/publications/${mine.id}/renew`, { method: 'POST', token: other })).status, 404);
@@ -139,18 +126,15 @@ try {
   check(renewed.body.publication.status, 'open');
   check(Math.round(days(new Date(renewed.body.publication.expires_at) - Date.now())), 30);
 
-  // --- Una publicación en reclamo o resuelta no se vence ni se renueva
   await client.query("UPDATE public.publications SET status = 'claimed', expires_at = now() - interval '1 day' WHERE id = $1", [mine.id]);
   check((await request(`/publications/${mine.id}`, { token: owner })).body.publication.status, 'claimed');
   check((await request(`/publications/${mine.id}/renew`, { method: 'POST', token: owner })).status, 409);
 
-  // --- Restricciones de la base (por si otro módulo inserta sin pasar por la API)
   await assert.rejects(client.query('SAVEPOINT s1').then(() => client.query(
     "INSERT INTO public.publications(user_id,type,title,description,category,occurred_at,neighborhood,address) VALUES($1,'found','Sin pregunta','Descripción larga','keys',now(),'Palermo','Calle 123')", [ownerId])));
   await client.query('ROLLBACK TO SAVEPOINT s1');
   checks++;
 
-  // --- Sesión revocada
   await client.query('UPDATE public.users SET session_version = 1 WHERE id = $1', [ownerId]);
   check((await request('/publications/mine', { token: owner })).status, 401);
 

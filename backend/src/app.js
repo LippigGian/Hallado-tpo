@@ -9,7 +9,6 @@ export function createApp(database, registrationService, loginService, sessionTo
   const app = express();
   app.disable('x-powered-by');
   if (sessionTokens) app.use('/profiles', express.json({ limit: '1500kb' }), profileRouter(database, sessionTokens));
-  // Publicaciones (punto 5): el parser JSON de cada ruta se define dentro del router.
   if (sessionTokens) app.use('/publications', publicationRouter(database, sessionTokens));
   app.use(express.json({ limit: '100kb' }));
 

@@ -1,7 +1,5 @@
 import { isUuid } from './uuid.js';
 
-// Middleware reutilizable: exige un JWT válido y deja el id del usuario en req.userId.
-// Lo usan las rutas de publicaciones y lo pueden usar reclamos, alertas y el resto.
 export function createRequireSession(database, tokens) {
   return async function requireSession(req, res, next) {
     if (!tokens.ready) return res.status(503).json({ error: 'Sesión no configurada.' });
@@ -17,7 +15,6 @@ export function createRequireSession(database, tokens) {
 
     try {
       const result = await database.query('SELECT session_version FROM public.users WHERE id=$1', [payload.sub]);
-      // Si cambió la contraseña, session_version cambió y los tokens anteriores dejan de valer.
       if (!result.rowCount || (payload.ver ?? 0) !== result.rows[0].session_version) {
         return res.status(401).json({ error: 'Sesión inválida o vencida.' });
       }
