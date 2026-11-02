@@ -4,7 +4,8 @@ import NetInfo from '@react-native-community/netinfo';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
 import {
-  ESTADO_PENDIENTE, listarPendientes, procesarPendientes, registrarEnviadorPublicaciones, suscribirseAPendientes,
+  ESTADO_PENDIENTE, conFotosLeidas, listarPendientes, procesarPendientes, registrarEnviadorPublicaciones,
+  suscribirseAPendientes,
 } from '../services/offline/pendingPublications';
 import { createPublication } from '../services/publicationService';
 
@@ -29,7 +30,7 @@ export function ConnectivityProvider({ children }) {
   const estabaEnLinea = useRef(true);
 
   // Las publicaciones creadas sin conexión se envían con el mismo alta del punto 5.
-  useEffect(() => registrarEnviadorPublicaciones(createPublication), []);
+  useEffect(() => registrarEnviadorPublicaciones(async datos => createPublication(await conFotosLeidas(datos))), []);
 
   const sincronizarPendientes = useCallback(async () => {
     if (!userId) return null;

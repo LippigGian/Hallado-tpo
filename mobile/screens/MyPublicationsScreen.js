@@ -89,7 +89,8 @@ export default function MyPublicationsScreen({ navigation, route }) {
       )}
       <PrimaryButton title="Nueva publicación" onPress={() => navigation.navigate('PublishPublication')} style={styles.newButton} />
       <PrimaryButton title="Ver reclamos recibidos" variant="secondary" onPress={() => navigation.navigate('MyClaims', { tab: 'received' })} style={styles.newButton} />
-      {!!error && <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text>}
+      {/* Sin conexión ya lo avisa el cartel "Sin conexión": no se muestra el error de la API. */}
+      {!!error && isOnline && <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text>}
     </View>
   );
 

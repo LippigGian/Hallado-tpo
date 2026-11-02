@@ -94,6 +94,19 @@ export async function encolarPublicacion(userId, datos = {}) {
   return item;
 }
 
+/**
+ * Lee el base64 de cada foto guardada en la cola. Las fotos se guardan como archivo (sin base64,
+ * para no llenar AsyncStorage) y `fetch` no puede leer archivos locales en Android, así que se
+ * leen con expo-file-system justo antes de enviar.
+ */
+export async function conFotosLeidas(datos) {
+  if (!Array.isArray(datos?.photos)) return datos;
+  const photos = await Promise.all(datos.photos.map(async foto => (
+    foto.base64 ? foto : { uri: foto.uri, base64: await new File(foto.uri).base64() }
+  )));
+  return { ...datos, photos };
+}
+
 export async function listarPendientes(userId) {
   return leer(userId);
 }
