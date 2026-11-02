@@ -19,14 +19,8 @@ export default function HomeScreen({ navigation }) {
     <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('MyClaims')}><Text style={styles.buttonText}>Mis reclamos</Text></TouchableOpacity>
     <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('ClaimDemo')}><Text style={styles.buttonText}>Reclamar (prueba)</Text></TouchableOpacity>
     <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('Profile')}><Text style={styles.buttonText}>Mi perfil</Text></TouchableOpacity>
-    <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('MeetingPointDemo')}>
-      <Text style={styles.buttonText}>Punto de encuentro (prueba)</Text>
-    </TouchableOpacity>
     <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('Settings')}>
       <Text style={styles.buttonText}>Configuración</Text>
-    </TouchableOpacity>
-    <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('OfflineDemo')}>
-      <Text style={styles.buttonText}>Modo sin conexión (prueba)</Text>
     </TouchableOpacity>
     <TouchableOpacity style={styles.button} accessibilityRole="button" disabled={busy} onPress={handleLogout}>
       <Text style={styles.buttonText}>{busy ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text>

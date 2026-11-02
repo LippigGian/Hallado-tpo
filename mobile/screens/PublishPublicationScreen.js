@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { idDeUsuario, useConnectivity } from '../context/ConnectivityContext';
+import { encolarPublicacion } from '../services/offline/pendingPublications';
 import { usePublicationDraft } from '../hooks/usePublicationDraft';
 import { getApiError } from '../services/api';
 import { createPublication } from '../services/publicationService';
@@ -25,6 +27,7 @@ const STEP_COMPONENTS = {
 
 export default function PublishPublicationScreen({ navigation }) {
   const { user } = useAuth();
+  const { isOnline } = useConnectivity();
   const draft = usePublicationDraft(user.id);
   const [error, setError] = useState('');
   const [publishing, setPublishing] = useState(false);
@@ -59,11 +62,24 @@ export default function PublishPublicationScreen({ navigation }) {
     }
     setPublishing(true);
     setError('');
+    const payload = buildPayload(form);
+    // Punto 6: sin conexión, la publicación queda "pendiente de envío" y se publica sola al reconectar.
+    async function guardarPendiente() {
+      await encolarPublicacion(idDeUsuario(user), payload);
+      await draft.finish();
+      navigation.replace('MyPublications', { queued: true });
+    }
     try {
-      await createPublication(buildPayload(form));
+      if (!isOnline) return await guardarPendiente();
+      await createPublication(payload);
       await draft.finish();
       navigation.replace('MyPublications', { justPublished: true });
     } catch (publishError) {
+      // Sin respuesta del servidor (y sin timeout, que podría haberla guardado): se encola.
+      const sinConexion = publishError?.isAxiosError && !publishError.response && publishError.code !== 'ECONNABORTED';
+      if (sinConexion) {
+        try { return await guardarPendiente(); } catch { /* si no se pudo guardar, se informa abajo */ }
+      }
       setError(publishError instanceof PhotoReadError ? publishError.message : getApiError(publishError));
       setPublishing(false);
     }
@@ -84,8 +100,13 @@ export default function PublishPublicationScreen({ navigation }) {
       <StepComponent form={form} onChange={draft.updateForm} />
 
       {!!error && <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text>}
+      {isLastStep && !isOnline && (
+        <Text style={styles.offline} accessibilityLiveRegion="polite">
+          Estás sin conexión. Tu publicación quedará pendiente de envío y se publicará sola cuando vuelvas a tener internet.
+        </Text>
+      )}
       {isLastStep
-        ? <PrimaryButton title="Publicar" busy={publishing} onPress={publish} style={styles.action} />
+        ? <PrimaryButton title={isOnline ? 'Publicar' : 'Guardar para publicar después'} busy={publishing} onPress={publish} style={styles.action} />
         : <PrimaryButton title="Siguiente" onPress={next} style={styles.action} />}
       {step > 0 && <PrimaryButton title="Atrás" variant="secondary" disabled={publishing} onPress={() => goTo(step - 1)} style={styles.action} />}
     </ScrollView>
@@ -103,4 +124,5 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '700', color: colors.text, marginBottom: 20 },
   error: { fontSize: 15, lineHeight: 22, color: colors.error, marginTop: 8 },
   action: { marginTop: 12 },
+  offline: { fontSize: 15, lineHeight: 22, color: colors.text, backgroundColor: colors.primarySoft, borderRadius: 10, padding: 12, marginTop: 12 },
 });

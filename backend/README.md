@@ -96,3 +96,7 @@ Punto 5: alta de pérdidas y hallazgos con fotos, "Mis publicaciones", vencimien
 ## Reclamos
 
 Punto 7: reclamos "Es mío" y "Lo encontré", aceptar o rechazar, máximo 3 intentos y vencimiento a 48 horas. Migración `007_claims.sql`; endpoints, reglas y pruebas en `../docs/reclamos.md`. Verificar con `npm test` y, con la migración aplicada, `npm run test:claims`.
+
+## Punto de encuentro
+
+Punto 8: una vez aceptado un reclamo, quien tiene el objeto propone dónde y cuándo devolverlo y la otra parte acepta o sugiere otro punto. Migración `008_meeting_points.sql`; endpoints y pruebas en `../docs/punto-encuentro.md`. Verificar con `npm test` y, con la migración aplicada, `npm run test:meeting-point`.

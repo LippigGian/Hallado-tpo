@@ -42,13 +42,15 @@ function nuevoIdLocal() {
 
 // Las fotos elegidas con expo-image-picker quedan en la caché del sistema, que puede
 // vaciarse. Se copian a una carpeta propia para que sigan existiendo al momento de enviar.
-function copiarFotos(idLocal, fotos = []) {
+// Acepta URIs sueltas o objetos { uri, base64 } (formato del formulario de publicar, punto 5);
+// el base64 no se guarda en la cola: se vuelve a leer del archivo copiado al enviar.
+function copiarFotos(idLocal, fotos = [], prefijo = 'foto') {
   if (!fotos.length) return [];
   const carpeta = new Directory(Paths.document, CARPETA_PENDIENTES, idLocal);
   carpeta.create({ intermediates: true, idempotent: true });
-  return fotos.map((uri, i) => {
-    const origen = new File(typeof uri === 'string' ? uri : uri.uri);
-    const destino = new File(carpeta, `foto-${i}.jpg`);
+  return fotos.map((foto, i) => {
+    const origen = new File(typeof foto === 'string' ? foto : foto.uri);
+    const destino = new File(carpeta, `${prefijo}-${i}.jpg`);
     origen.copy(destino);
     return destino.uri;
   });
@@ -70,15 +72,19 @@ function esErrorDeConexion(error) {
 
 /**
  * Guarda una publicación creada sin conexión. `datos` es el mismo objeto que se enviaría
- * a la API; `datos.fotos` puede ser una lista de URIs locales (expo-image-picker).
+ * a la API. Las fotos pueden venir en `photos` (objetos { uri, base64 } del formulario de
+ * publicar) o en `fotos` (URIs locales); se copian a una carpeta propia.
  * Devuelve el registro con estado "pendiente_envio".
  */
-export async function encolarPublicacion(userId, datos) {
+export async function encolarPublicacion(userId, datos = {}) {
   const idLocal = nuevoIdLocal();
-  const fotos = copiarFotos(idLocal, datos?.fotos || []);
+  const { fotos, photos, ...resto } = datos;
+  const guardados = { ...resto };
+  if (Array.isArray(fotos)) guardados.fotos = copiarFotos(idLocal, fotos, 'foto');
+  if (Array.isArray(photos)) guardados.photos = copiarFotos(idLocal, photos, 'photo').map(uri => ({ uri }));
   const item = {
     idLocal,
-    datos: { ...datos, fotos },
+    datos: guardados,
     estado: ESTADO_PENDIENTE,
     creadaEn: Date.now(),
     intentos: 0,
@@ -104,9 +110,8 @@ export async function reintentarPendiente(userId, idLocal) {
 }
 
 /**
- * El punto 5 (Publicar) registra acá la función que envía una publicación a la API:
- *   registrarEnviadorPublicaciones(async datos => (await api.post('/publicaciones', datos)).data)
- * Debe devolver la publicación creada o lanzar el error de Axios.
+ * Registra la función que envía una publicación a la API. ConnectivityContext registra
+ * createPublication (punto 5). Debe devolver la publicación creada o lanzar el error.
  */
 export function registrarEnviadorPublicaciones(funcion) {
   enviador = funcion;
@@ -146,7 +151,8 @@ export async function procesarPendientes(userId) {
       } catch (error) {
         if (esErrorDeConexion(error)) break;
         const mensaje = typeof error?.response?.data?.error === 'string'
-          ? error.response.data.error : 'El servidor rechazó la publicación.';
+          ? error.response.data.error
+          : (!error?.isAxiosError && error?.message) || 'El servidor rechazó la publicación.';
         await actualizar(userId, items => items.map(i => (i.idLocal === item.idLocal
           ? { ...i, estado: ESTADO_ERROR, intentos: i.intentos + 1, ultimoError: mensaje } : i)));
         resumen.conError += 1;

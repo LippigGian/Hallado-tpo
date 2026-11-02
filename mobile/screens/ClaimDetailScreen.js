@@ -11,6 +11,7 @@ import PrimaryButton from '../components/PrimaryButton';
 import ClaimStatusBadge from '../components/claim/ClaimStatusBadge';
 import ClaimEvidence from '../components/claim/ClaimEvidence';
 import ClaimAcceptedInfo from '../components/claim/ClaimAcceptedInfo';
+import MeetingPointSection from '../components/meetingPoint/MeetingPointSection';
 
 const DECISIONS = {
   accept: {
@@ -114,6 +115,8 @@ export default function ClaimDetailScreen({ navigation, route }) {
           onOpenProfile={() => navigation.navigate('PublicProfile', { userId: counterpart.id })}
         />
       )}
+
+      {accepted && <MeetingPointSection claimId={claim.id} counterpartName={counterpart.name} />}
 
       <ClaimEvidence claim={claim} />
 
