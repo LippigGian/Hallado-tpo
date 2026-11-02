@@ -7,15 +7,11 @@ export const api = axios.create({
   timeout: 20000,
 });
 
-// Rutas del backend que no llevan sesión: login, registro y recuperación de contraseña.
-// Todas las demás (perfil, publicaciones, reclamos, etc.) reciben el token y, si el servidor
-// responde 401, la app cierra la sesión (ver AuthContext).
 const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/password-reset'];
 export function requiresSession(url = '') {
   return !PUBLIC_PATHS.some(path => url.startsWith(path));
 }
 
-// URL completa de un recurso del backend (por ejemplo una foto) a partir de su ruta: "/publications/…/photos/…".
 export function apiUrl(path) {
   return path ? `${api.defaults.baseURL.replace(/\/$/, '')}${path}` : null;
 }

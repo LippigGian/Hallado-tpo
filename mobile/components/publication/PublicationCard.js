@@ -11,9 +11,6 @@ const STATUS_COLORS = {
   expired: colors.error,
 };
 
-// Tarjeta de una publicación (la respuesta de la API ya serializada).
-// Se reutiliza en "Mis publicaciones" y puede usarse en resultados de búsqueda y alertas.
-// `onPress` es opcional; `children` se muestra al pie (por ejemplo, botones de acción).
 export default function PublicationCard({ publication, onPress, children }) {
   const cover = publication.photos[0] ? apiUrl(publication.photos[0].url) : null;
   const expiryLabel = publication.status === 'expired' ? 'Venció el' : 'Vence el';

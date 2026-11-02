@@ -6,7 +6,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function emptyForm(now = new Date()) {
   return {
     type: '',
-    photos: [], // URIs locales de las fotos
+    photos: [],
     title: '',
     description: '',
     category: '',
@@ -34,7 +34,6 @@ function occurredAtError(form, now) {
   return '';
 }
 
-// Cada validador devuelve el mensaje del primer problema, o '' si el paso está completo.
 const stepValidators = {
   type: form => (form.type ? '' : 'Elegí si perdiste o encontraste algo.'),
 
@@ -57,7 +56,6 @@ export function validateStep(stepId, form, now = new Date()) {
   return stepValidators[stepId](form, now);
 }
 
-// Arma el cuerpo que espera POST /publications. Las fotos siguen siendo URIs: el servicio las convierte al enviar.
 export function buildPayload(form) {
   const payload = {
     type: form.type,

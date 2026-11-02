@@ -5,7 +5,7 @@ import { formatDateTime, maskDate, maskTime, parseDateTime } from '../utils/date
 import { buildPayload, emptyForm, validateStep } from '../utils/publicationValidation.js';
 import { looksLikeImage, normalizePhoto, photoToBase64, PhotoReadError } from '../utils/photos.js';
 
-const now = new Date(2026, 10, 1, 15, 0); // 01/11/2026 15:00 hora local
+const now = new Date(2026, 10, 1, 15, 0);
 
 function filledForm(overrides = {}) {
   return {
@@ -108,7 +108,6 @@ test('normalizePhoto acepta una URI suelta o un objeto', () => {
 
 test('photoToBase64 usa el base64 del selector y falla con un mensaje claro si la foto no es legible', async () => {
   assert.equal(await photoToBase64({ uri: 'file:///a.jpg', base64: '/9j/4AAQSkZJRg==' }), '/9j/4AAQSkZJRg==');
-  // Sin base64 se intenta leer el archivo; en este entorno no existe, así que debe fallar con PhotoReadError.
   await assert.rejects(() => photoToBase64('file:///no-existe.jpg'), error => error instanceof PhotoReadError && /Quitala/.test(error.message));
   await assert.rejects(() => photoToBase64({ uri: 'file:///a.jpg', base64: 'texto-cualquiera' }), PhotoReadError);
 });

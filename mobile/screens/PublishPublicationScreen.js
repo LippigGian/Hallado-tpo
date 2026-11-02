@@ -23,7 +23,6 @@ const STEP_COMPONENTS = {
   verification: VerificationStep,
 };
 
-// Punto 5: carga guiada en pasos. El formulario se guarda solo como borrador (usePublicationDraft).
 export default function PublishPublicationScreen({ navigation }) {
   const { user } = useAuth();
   const draft = usePublicationDraft(user.id);
@@ -50,7 +49,6 @@ export default function PublishPublicationScreen({ navigation }) {
   }
 
   async function publish() {
-    // Se revisan todos los pasos: un borrador viejo puede tener datos que ya no valen (por ejemplo, una fecha).
     for (const [index, id] of steps.entries()) {
       const message = validateStep(id, form);
       if (message) {
@@ -66,7 +64,6 @@ export default function PublishPublicationScreen({ navigation }) {
       await draft.finish();
       navigation.replace('MyPublications', { justPublished: true });
     } catch (publishError) {
-      // Si falla (sin conexión, por ejemplo), el borrador queda guardado para reintentar.
       setError(publishError instanceof PhotoReadError ? publishError.message : getApiError(publishError));
       setPublishing(false);
     }

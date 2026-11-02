@@ -1,7 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../config/theme';
 
-// Lista de opciones de selección única (por ejemplo, las categorías). `options` = [{ value, label }].
 export default function ChoiceChips({ options, value, onChange }) {
   return (
     <View style={styles.row}>

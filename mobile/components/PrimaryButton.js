@@ -1,7 +1,6 @@
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { colors } from '../config/theme';
 
-// variant="primary": botón relleno. variant="secondary": solo texto, para acciones menos importantes.
 export default function PrimaryButton({ title, onPress, variant = 'primary', busy = false, disabled = false, style }) {
   const primary = variant === 'primary';
   return (

@@ -1,6 +1,3 @@
-// Opciones y límites compartidos por el alta de publicaciones (punto 5) y por las pantallas que
-// las muestran o filtran (buscador, detalle, reclamos). Los valores `value` son los que guarda la API.
-
 export const PUBLICATION_TYPES = [
   { value: 'lost', label: 'Perdí algo', description: 'Quiero que me ayuden a encontrarlo.' },
   { value: 'found', label: 'Encontré algo', description: 'Quiero devolverlo a su dueño.' },
@@ -22,7 +19,6 @@ export const STATUS_LABELS = {
   expired: 'Vencida',
 };
 
-// Mismos límites que valida el backend (backend/src/publication-validation.js).
 export const LIMITS = {
   title: [3, 80],
   description: [10, 1000],
@@ -43,7 +39,6 @@ export const STEP_TITLES = {
   verification: 'Pregunta de verificación',
 };
 
-// La pregunta de verificación solo existe al publicar algo encontrado.
 export function stepsFor(type) {
   const steps = ['type', 'photos', 'details', 'location'];
   return type === 'found' ? [...steps, 'verification'] : steps;

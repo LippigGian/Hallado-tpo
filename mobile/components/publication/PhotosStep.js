@@ -6,15 +6,11 @@ import PrimaryButton from '../PrimaryButton';
 import { colors } from '../../config/theme';
 import { LIMITS } from '../../config/publicationOptions';
 
-// Paso 2: fotos con la cámara o desde la galería (de 1 a 5).
 export default function PhotosStep({ form, onChange }) {
-  // La cámara y la galería abren pantallas de Android: runNativeActivity evita que la app se bloquee
-  // con la biometría mientras tanto (igual que en Editar perfil).
   const { runNativeActivity } = useAuth();
   const [message, setMessage] = useState('');
   const remaining = LIMITS.maxPhotos - form.photos.length;
 
-  // base64: true hace que el selector entregue la foto ya codificada (así se envía a la API).
   function addAssets(assets) {
     const photos = [];
     for (const asset of assets) {

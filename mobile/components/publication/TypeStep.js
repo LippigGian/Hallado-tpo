@@ -2,7 +2,6 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../config/theme';
 import { PUBLICATION_TYPES } from '../../config/publicationOptions';
 
-// Paso 1: perdí / encontré.
 export default function TypeStep({ form, onChange }) {
   return (
     <View>

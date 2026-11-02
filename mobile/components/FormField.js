@@ -1,7 +1,6 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors } from '../config/theme';
 
-// Campo de texto con etiqueta y ayuda opcional. Recibe las mismas props que TextInput.
 export default function FormField({ label, hint, multiline = false, ...inputProps }) {
   return (
     <View style={styles.container}>

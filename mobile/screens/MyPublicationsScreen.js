@@ -7,9 +7,8 @@ import { colors } from '../config/theme';
 import PrimaryButton from '../components/PrimaryButton';
 import PublicationCard from '../components/publication/PublicationCard';
 
-// Punto 5: "Mis publicaciones" con el estado de cada una (abierta, en reclamo, resuelta o vencida).
 export default function MyPublicationsScreen({ navigation, route }) {
-  const [publications, setPublications] = useState(null); // null = cargando por primera vez
+  const [publications, setPublications] = useState(null);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [renewingId, setRenewingId] = useState(null);
@@ -24,7 +23,6 @@ export default function MyPublicationsScreen({ navigation, route }) {
     }
   }, []);
 
-  // Al volver a esta pantalla (por ejemplo desde reclamos) se actualizan los estados.
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function refresh() {

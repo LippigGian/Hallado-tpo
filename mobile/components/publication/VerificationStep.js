@@ -3,7 +3,6 @@ import FormField from '../FormField';
 import { colors } from '../../config/theme';
 import { LIMITS } from '../../config/publicationOptions';
 
-// Paso 5 (solo hallazgos): pregunta sobre un detalle que no se vea en las fotos y su respuesta privada.
 export default function VerificationStep({ form, onChange }) {
   return (
     <View>

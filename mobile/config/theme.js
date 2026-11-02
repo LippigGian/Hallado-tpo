@@ -1,4 +1,3 @@
-// Colores de la app. Son los mismos que ya usan las pantallas de perfil y autenticación.
 export const colors = {
   background: '#F6F8F7',
   surface: 'white',

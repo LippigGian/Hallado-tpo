@@ -9,9 +9,8 @@ import { LIMITS } from '../../config/publicationOptions';
 
 const roundCoordinate = value => Math.round(value * 1e6) / 1e6;
 
-// Paso 4: barrio y dirección exacta, escritos o con la ubicación actual del dispositivo (carga las coordenadas).
 export default function LocationStep({ form, onChange }) {
-  const { runNativeActivity } = useAuth(); // el diálogo de permisos también pasa la app a segundo plano
+  const { runNativeActivity } = useAuth();
   const [locating, setLocating] = useState(false);
   const [message, setMessage] = useState('');
   const hasCoordinates = form.latitude !== null && form.longitude !== null;

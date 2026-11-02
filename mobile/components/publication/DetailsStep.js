@@ -5,7 +5,6 @@ import { colors } from '../../config/theme';
 import { CATEGORIES, LIMITS } from '../../config/publicationOptions';
 import { maskDate, maskTime } from '../../utils/dateTime';
 
-// Paso 3: título, descripción, categoría y fecha y hora del suceso.
 export default function DetailsStep({ form, onChange }) {
   return (
     <View>
