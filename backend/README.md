@@ -86,3 +86,7 @@ POST `/auth/password-reset/request-code`, `/verify-code` y `/complete`. Document
 ## Perfiles
 
 Punto 2: edición privada, foto de galería, perfil público, reputación e insignias. Consultar `../docs/perfiles.md` para endpoints e integración interna con reclamos, devoluciones y valoraciones. Verificar con `npm run test:profiles`.
+
+## Publicaciones
+
+Punto 5: alta de pérdidas y hallazgos con fotos, "Mis publicaciones", vencimiento a los 30 días y renovación. Migración `006_publications.sql`; endpoints, privacidad y pruebas en `../docs/publicaciones.md`. Verificar con `npm test` y, con la migración aplicada, `npm run test:publications`.

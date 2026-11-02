@@ -13,6 +13,8 @@ export default function HomeScreen({ navigation }) {
     <Text style={styles.title}>¡Bienvenido a Hallado!</Text>
     <Text style={styles.text}>Sesión iniciada como {user.email}</Text>
     <Text style={styles.text}>Esta pantalla provisoria permite comprobar la autenticación. Las publicaciones se incorporarán más adelante.</Text>
+    <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('PublishPublication')}><Text style={styles.buttonText}>Publicar pérdida o hallazgo</Text></TouchableOpacity>
+    <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('MyPublications')}><Text style={styles.buttonText}>Mis publicaciones</Text></TouchableOpacity>
     <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('Profile')}><Text style={styles.buttonText}>Mi perfil</Text></TouchableOpacity>
     <TouchableOpacity style={[styles.button, { marginBottom:12 }]} accessibilityRole="button" disabled={busy} onPress={() => navigation.navigate('MeetingPointDemo')}>
       <Text style={styles.buttonText}>Punto de encuentro (prueba)</Text>
