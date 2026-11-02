@@ -17,6 +17,7 @@ export function apiUrl(path) {
 }
 
 api.interceptors.request.use(async config => {
+  if (config.url === '/auth/me' || config.url === '/profiles/me' || config.url?.startsWith('/publications')) {
   if (requiresSession(config.url)) {
     const saved = await SecureStore.getItemAsync(SESSION_KEY);
     const session = saved ? JSON.parse(saved) : null;

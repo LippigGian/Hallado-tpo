@@ -1,0 +1,141 @@
+export const CATEGORIES = ['documents', 'keys', 'electronics', 'pets', 'clothing', 'other'];
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const LATLNG_RE = /^-?\d+(\.\d+)?$/;
+
+function validDate(value) {
+  if (!DATE_RE.test(value)) return false;
+  const [y, m, d] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
+
+// Devuelve { error } o los filtros ya validados y normalizados.
+export function parseSearchQuery(query = {}) {
+  for (const key of Object.keys(query)) {
+    if (Array.isArray(query[key])) return { error: 'Parámetros de búsqueda inválidos.' };
+  }
+
+  if (query.situation !== 'lost' && query.situation !== 'found') return { error: 'Indicá si perdiste o encontraste algo.' };
+  // La búsqueda devuelve el tipo opuesto a lo que le pasó a quien busca.
+  const type = query.situation === 'lost' ? 'found' : 'lost';
+
+  let category = null;
+  if (query.category !== undefined && query.category !== '') {
+    if (!CATEGORIES.includes(query.category)) return { error: 'Categoría inválida.' };
+    category = query.category;
+  }
+
+  let terms = [];
+  if (query.q !== undefined && query.q !== '') {
+    if (typeof query.q !== 'string' || query.q.length > 100) return { error: 'Las palabras clave admiten hasta 100 caracteres.' };
+    terms = query.q.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().split(/\s+/).filter(t => t.length >= 2).slice(0, 5);
+  }
+
+  let neighborhood = null;
+  if (query.neighborhood !== undefined && query.neighborhood !== '') {
+    if (typeof query.neighborhood !== 'string') return { error: 'Barrio o localidad inválido.' };
+    const trimmed = query.neighborhood.trim();
+    if (!trimmed || trimmed.length > 100) return { error: 'Barrio o localidad inválido.' };
+    neighborhood = trimmed;
+  }
+
+  let from = null, to = null;
+  if (query.from !== undefined && query.from !== '') {
+    if (typeof query.from !== 'string' || !validDate(query.from)) return { error: 'Revisá el rango de fechas (formato AAAA-MM-DD).' };
+    from = query.from;
+  }
+  if (query.to !== undefined && query.to !== '') {
+    if (typeof query.to !== 'string' || !validDate(query.to)) return { error: 'Revisá el rango de fechas (formato AAAA-MM-DD).' };
+    to = query.to;
+  }
+  if (from && to && from > to) return { error: 'La fecha inicial no puede ser posterior a la final.' };
+
+  let sort = 'recent';
+  if (query.sort !== undefined && query.sort !== '') {
+    if (query.sort !== 'recent' && query.sort !== 'nearest') return { error: 'Orden inválido.' };
+    sort = query.sort;
+  }
+
+  let lat = null, lng = null;
+  const hasLat = query.lat !== undefined && query.lat !== '';
+  const hasLng = query.lng !== undefined && query.lng !== '';
+  if (hasLat !== hasLng) return { error: 'Ubicación inválida.' };
+  if (hasLat && hasLng) {
+    if (typeof query.lat !== 'string' || typeof query.lng !== 'string' || !LATLNG_RE.test(query.lat) || !LATLNG_RE.test(query.lng)) return { error: 'Ubicación inválida.' };
+    lat = Number(query.lat);
+    lng = Number(query.lng);
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return { error: 'Ubicación inválida.' };
+  }
+  if (sort === 'nearest' && lat === null) return { error: 'Para ordenar por cercanía indicá una ubicación.' };
+
+  let page = 1;
+  if (query.page !== undefined && query.page !== '') {
+    if (typeof query.page !== 'string' || !/^\d+$/.test(query.page)) return { error: 'Paginación inválida.' };
+    page = Number(query.page);
+    if (page < 1 || page > 500) return { error: 'Paginación inválida.' };
+  }
+  let pageSize = 10;
+  if (query.page_size !== undefined && query.page_size !== '') {
+    if (typeof query.page_size !== 'string' || !/^\d+$/.test(query.page_size)) return { error: 'Paginación inválida.' };
+    pageSize = Number(query.page_size);
+    if (pageSize < 1 || pageSize > 30) return { error: 'Paginación inválida.' };
+  }
+
+  return { type, situation: query.situation, category, terms, neighborhood, from, to, sort, lat, lng, page, pageSize };
+}
+
+export function photoUrl(publicationId, photoId) {
+  return `/publications/${publicationId}/photos/${photoId}`;
+}
+
+export async function searchPublications(database, filters) {
+  const { type, category, terms, neighborhood, from, to, sort, lat, lng, page, pageSize } = filters;
+  const values = [type];
+  const where = ['p.type=$1', "p.status IN ('open','in_claim')"];
+  const param = value => { values.push(value); return `$${values.length}`; };
+
+  if (category) where.push(`p.category=${param(category)}`);
+  if (neighborhood) where.push(`lower(p.neighborhood)=lower(${param(neighborhood)})`);
+  if (from) where.push(`p.occurred_on>=${param(from)}::date`);
+  if (to) where.push(`p.occurred_on<=${param(to)}::date`);
+  for (const term of terms) {
+    const escaped = term.replace(/[\\%_]/g, match => '\\' + match);
+    where.push(`translate(lower(p.title||' '||p.description),'áéíóúüñ','aeiouun') LIKE ${param(`%${escaped}%`)} ESCAPE '\\'`);
+  }
+
+  let distanceExpr = 'NULL::double precision';
+  if (lat !== null) {
+    const latParam = param(lat), lngParam = param(lng);
+    // Distancia aproximada (fórmula equirectangular) sobre las coordenadas ya redondeadas a ~1km,
+    // así ninguna consulta repetida permite triangular el punto exacto.
+    distanceExpr = `round((sqrt(power((p.approx_latitude-${latParam})*111.32,2)+power((p.approx_longitude-${lngParam})*111.32*cos(radians(${latParam})),2)))::numeric,1)::double precision`;
+  }
+  const order = sort === 'nearest' ? 'distance_km ASC, p.occurred_on DESC, p.id' : 'p.occurred_on DESC, p.created_at DESC, p.id';
+  const limitParam = param(pageSize);
+  const offsetParam = param((page - 1) * pageSize);
+
+  const sql = `SELECT p.id,p.type,p.title,p.category,p.neighborhood,to_char(p.occurred_on,'YYYY-MM-DD') AS occurred_on,p.time_slot,p.status,
+      p.approx_latitude,p.approx_longitude,p.created_at,${distanceExpr} AS distance_km,
+      coalesce((SELECT array_agg(f.id::text ORDER BY f.position) FROM public.publication_photos f WHERE f.publication_id=p.id),'{}') AS photo_ids,
+      count(*) OVER()::integer AS total
+    FROM public.publications p WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ${limitParam} OFFSET ${offsetParam}`;
+
+  const result = await database.query(sql, values);
+  const total = result.rows[0]?.total ?? 0;
+  const results = result.rows.map(row => ({
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    category: row.category,
+    neighborhood: row.neighborhood,
+    occurred_on: row.occurred_on,
+    time_slot: row.time_slot,
+    status: row.status,
+    approx_latitude: row.approx_latitude,
+    approx_longitude: row.approx_longitude,
+    distance_km: row.distance_km,
+    created_at: row.created_at,
+    photos: (row.photo_ids || []).map(id => ({ id, url: photoUrl(row.id, id) })),
+  }));
+  return { results, page, page_size: pageSize, total, has_more: page * pageSize < total };
+}
