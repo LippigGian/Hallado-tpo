@@ -11,14 +11,15 @@ const tokens = createSessionTokens(process.env.JWT_SECRET);
 const server = createApp(database, undefined, undefined, tokens).listen(0, '127.0.0.1'); await once(server, 'listening');
 const base = `http://127.0.0.1:${server.address().port}`;
 let checks = 0; function check(a, b) { assert.deepEqual(a, b); checks++; }
-async function request(path, { token } = {}) {
-  const response = await fetch(base + path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+async function request(path, { token, method = 'GET' } = {}) {
+  const response = await fetch(base + path, { method, headers: token ? { Authorization: `Bearer ${token}` } : {} });
   return { status: response.status, body: await response.json() };
 }
 try {
   const owner = randomUUID(), viewer = randomUUID();
   for (const id of [owner, viewer]) await client.query("INSERT INTO public.users(id,email,password_hash,email_verified_at,name,neighborhood) VALUES($1,$2,'temporary-not-a-real-password',now(),'Vecino de prueba','Palermo')", [id, `${id}@example.invalid`]);
   const viewerToken = tokens.sign(viewer);
+  const ownerToken = tokens.sign(owner);
 
   async function publication({ type = 'found', category = 'keys', title, description = '', neighborhood = 'Palermo', occurredOn, status = 'open', lat, lng, address = 'Calle de prueba 100' }) {
     const id = randomUUID();
@@ -92,7 +93,41 @@ try {
   const withSession = await request('/publications?situation=lost&category=keys', { token: viewerToken });
   check(withSession.status, 200);
 
-  console.log(`${checks} verificaciones HTTP/PostgreSQL correctas: tipo opuesto, resueltas excluidas, palabra clave con/sin tilde, rango de fechas, columnas redondeadas, orden por cercanía, paginación y foto servida.`);
+  // Detalle: id inválido/inexistente, anónimo vs. tercero vs. dueño.
+  check((await request('/publications/no-es-uuid')).status, 400);
+  check((await request(`/publications/${randomUUID()}`)).status, 404);
+  const anonDetail = await request(`/publications/${foundKeys}`);
+  check(anonDetail.status, 200);
+  check(anonDetail.body.publication.exact_location, null);
+  check(anonDetail.body.publication.viewer.can_claim, false);
+  for (const field of ['latitude', 'longitude', 'exact_address', 'publisher_id']) check(field in anonDetail.body.publication, false);
+
+  const thirdDetail = await request(`/publications/${foundKeys}`, { token: viewerToken });
+  check(thirdDetail.body.publication.viewer.can_claim, true);
+  check(thirdDetail.body.publication.viewer.claim_action, 'its_mine');
+  check(thirdDetail.body.publication.exact_location, null);
+
+  const ownerDetail = await request(`/publications/${foundKeys}`, { token: ownerToken });
+  check(ownerDetail.body.publication.exact_location.address, 'Calle de prueba 100');
+  check(ownerDetail.body.publication.viewer.can_manage, true);
+  check(ownerDetail.body.publication.viewer.can_claim, false);
+
+  // Seguir / dejar de seguir.
+  check((await request(`/publications/${foundKeys}/follow`, { method: 'POST' })).status, 401);
+  check((await request(`/publications/${foundKeys}/follow`, { method: 'POST', token: ownerToken })).status, 400);
+  check((await request(`/publications/${foundResolved}/follow`, { method: 'POST', token: viewerToken })).status, 409);
+  const followed = await request(`/publications/${foundKeys}/follow`, { method: 'POST', token: viewerToken });
+  check(followed.status, 200);
+  check(followed.body, { following: true, followers_count: 1 });
+  const repeated = await request(`/publications/${foundKeys}/follow`, { method: 'POST', token: viewerToken });
+  check(repeated.body.followers_count, 1);
+  const afterFollowDetail = await request(`/publications/${foundKeys}`, { token: viewerToken });
+  check(afterFollowDetail.body.publication.viewer.is_following, true);
+  check(afterFollowDetail.body.publication.followers_count, 1);
+  const unfollowed = await request(`/publications/${foundKeys}/follow`, { method: 'DELETE', token: viewerToken });
+  check(unfollowed.body, { following: false, followers_count: 0 });
+
+  console.log(`${checks} verificaciones HTTP/PostgreSQL correctas: tipo opuesto, resueltas excluidas, palabra clave con/sin tilde, rango de fechas, columnas redondeadas, orden por cercanía, paginación, foto servida, detalle según el viewer y seguir/dejar de seguir.`);
 } finally {
   await new Promise(resolve => { server.close(resolve); server.closeAllConnections(); });
   await client.query('ROLLBACK'); await client.end();
