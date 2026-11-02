@@ -22,12 +22,15 @@ function publicationRow(overrides = {}) {
     status: 'open',
     approx_latitude: -34.58,
     approx_longitude: -58.43,
-    exact_address: 'Honduras 4800',
+    address: 'Honduras 4800',
     latitude: -34.5781,
     longitude: -58.4262,
     created_at: new Date('2026-10-31T12:00:00Z'),
     updated_at: new Date('2026-10-31T12:00:00Z'),
-    publisher_id: publisherId,
+    user_id: publisherId,
+    verification_question: '¿De qué color es el llavero?',
+    verification_answer: 'Azul',
+    expires_at: new Date('2026-11-30T12:00:00Z'),
     photo_ids: ['00000000-0000-4000-8000-0000000000b1'],
     followers_count: 2,
     publisher_name: 'Ana',
@@ -39,12 +42,18 @@ function publicationRow(overrides = {}) {
   };
 }
 
-function makeDatabase({ row = publicationRow(), following = false, repEvents = { completed_returns: 6, positive_ratings: 0, negative_ratings: 0 }, follow = {} } = {}) {
+function makeDatabase({ row = publicationRow(), following = false, repEvents = { completed_returns: 6, positive_ratings: 0, negative_ratings: 0 }, follow = {}, acceptedClaim = false } = {}) {
   const calls = [];
-  return {
+  const database = {
     calls,
+    // Los reclamos vencidos se actualizan antes de cada consulta (punto 7).
+    async transaction(run) { return run(database); },
     async query(sql, values) {
       calls.push({ sql, values });
+      if (/UPDATE public\.claims SET status = 'expired'/.test(sql)) return { rowCount: 0, rows: [] };
+      if (/FROM public\.claims WHERE publication_id = \$1 AND claimant_id = \$2 AND status = 'accepted'/.test(sql)) {
+        return acceptedClaim ? { rowCount: 1, rows: [{}] } : { rowCount: 0, rows: [] };
+      }
       if (/FROM public\.users WHERE id=\$1/.test(sql)) {
         if (values[0] === viewerId || values[0] === publisherId) return { rowCount: 1, rows: [{ id: values[0], session_version: 0 }] };
         return { rowCount: 0, rows: [] };
@@ -62,8 +71,8 @@ function makeDatabase({ row = publicationRow(), following = false, repEvents = {
       if (/e\.event_type='thanks'/.test(sql)) {
         return { rowCount: 0, rows: [] };
       }
-      if (/SELECT publisher_id,status FROM public\.publications WHERE id=\$1/.test(sql)) {
-        return follow.notFound ? { rowCount: 0, rows: [] } : { rowCount: 1, rows: [{ publisher_id: follow.publisherId ?? publisherId, status: follow.status ?? 'open' }] };
+      if (/SELECT user_id,status FROM public\.publications WHERE id=\$1/.test(sql)) {
+        return follow.notFound ? { rowCount: 0, rows: [] } : { rowCount: 1, rows: [{ user_id: follow.publisherId ?? publisherId, status: follow.status ?? 'open' }] };
       }
       if (/SELECT 1 FROM public\.publications WHERE id=\$1/.test(sql)) {
         return follow.notFound ? { rowCount: 0, rows: [] } : { rowCount: 1, rows: [{}] };
@@ -80,6 +89,7 @@ function makeDatabase({ row = publicationRow(), following = false, repEvents = {
       throw new Error(`Consulta inesperada en el mock: ${sql}`);
     },
   };
+  return database;
 }
 
 async function withServer(database, run) {
@@ -169,7 +179,9 @@ test('la respuesta nunca expone campos privados ni el historial de agradecimient
   await withServer(database, async base => {
     const response = await fetch(`${base}/publications/${publicationRow().id}`);
     const { publication } = await response.json();
-    for (const field of ['latitude', 'longitude', 'exact_address', 'publisher_id']) assert.equal(field in publication, false);
+    for (const field of ['latitude', 'longitude', 'user_id', 'verification_answer']) assert.equal(field in publication, false);
+    assert.equal(publication.address, null);
+    assert.equal(publication.verification_question, '¿De qué color es el llavero?');
     for (const field of ['email', 'phone']) assert.equal(field in publication.publisher, false);
     assert.equal('thanks' in publication.publisher.reputation, false);
   });
@@ -206,10 +218,26 @@ test('POST y DELETE /publications/:id/follow', async () => {
   });
 });
 
-// 8. canSeeExactLocation en aislamiento.
-test('canSeeExactLocation solo es true para el publicador', async () => {
-  const publication = { publisher_id: publisherId };
-  assert.equal(await canSeeExactLocation({}, publication, publisherId), true);
-  assert.equal(await canSeeExactLocation({}, publication, viewerId), false);
-  assert.equal(await canSeeExactLocation({}, publication, null), false);
+// 8. canSeeExactLocation en aislamiento: publicador o reclamo aceptado (punto 7).
+test('canSeeExactLocation es true para el publicador o con un reclamo aceptado', async () => {
+  const publication = { id: publicationRow().id, user_id: publisherId };
+  const sinReclamo = { query: async () => ({ rowCount: 0, rows: [] }) };
+  const conReclamo = { query: async () => ({ rowCount: 1, rows: [{}] }) };
+  assert.equal(await canSeeExactLocation(sinReclamo, publication, publisherId), true);
+  assert.equal(await canSeeExactLocation(sinReclamo, publication, viewerId), false);
+  assert.equal(await canSeeExactLocation(conReclamo, publication, viewerId), true);
+  assert.equal(await canSeeExactLocation(conReclamo, publication, null), false);
+});
+
+// 9. Con un reclamo aceptado, la contraparte ve la dirección exacta pero nunca la respuesta.
+test('con reclamo aceptado se ve la dirección exacta, nunca la respuesta de verificación', async () => {
+  const database = makeDatabase({ acceptedClaim: true });
+  await withServer(database, async (base, tokens) => {
+    const response = await fetch(`${base}/publications/${publicationRow().id}`, { headers: { Authorization: `Bearer ${tokens.sign(viewerId, 0)}` } });
+    const { publication } = await response.json();
+    assert.equal(publication.exact_location.address, 'Honduras 4800');
+    assert.equal(publication.address, 'Honduras 4800');
+    assert.equal('verification_answer' in publication, false);
+    assert.equal(publication.is_owner, false);
+  });
 });

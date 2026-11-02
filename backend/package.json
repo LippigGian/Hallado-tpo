@@ -17,8 +17,8 @@
     "test:login": "node --env-file-if-exists=.env scripts/check-login.js",
     "test:recovery": "node --env-file-if-exists=.env scripts/check-recovery.js",
     "test:profiles": "node --env-file-if-exists=.env scripts/check-profiles.js",
-    "test:publications": "node --env-file-if-exists=.env scripts/check-publications.js"
     "test:publications": "node --env-file-if-exists=.env scripts/check-publications.js",
+    "test:search": "node --env-file-if-exists=.env scripts/check-search.js",
     "test:claims": "node --env-file-if-exists=.env scripts/check-claims.js"
   },
   "dependencies": {

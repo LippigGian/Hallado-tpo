@@ -84,6 +84,23 @@ export function parseSearchQuery(query = {}) {
   return { type, situation: query.situation, category, terms, neighborhood, from, to, sort, lat, lng, page, pageSize };
 }
 
+// Esquema de publicaciones del punto 5 (006_publications.sql): occurred_at es fecha y hora,
+// address es la dirección exacta y el vencimiento se calcula con expires_at. Estas expresiones
+// derivan los campos que usan el buscador y el detalle sin guardar datos duplicados.
+const ZONA = "'America/Argentina/Buenos_Aires'";
+export const SQL_OCCURRED_ON = `to_char(p.occurred_at AT TIME ZONE ${ZONA},'YYYY-MM-DD')`;
+const SQL_OCCURRED_DATE = `(p.occurred_at AT TIME ZONE ${ZONA})::date`;
+export const SQL_TIME_SLOT = `CASE
+    WHEN extract(hour FROM p.occurred_at AT TIME ZONE ${ZONA}) < 6 THEN 'early_morning'
+    WHEN extract(hour FROM p.occurred_at AT TIME ZONE ${ZONA}) < 12 THEN 'morning'
+    WHEN extract(hour FROM p.occurred_at AT TIME ZONE ${ZONA}) < 19 THEN 'afternoon'
+    ELSE 'night' END`;
+export const SQL_STATUS = "CASE WHEN p.status = 'open' AND p.expires_at <= now() THEN 'expired' ELSE p.status END";
+// Coordenadas públicas redondeadas a ~1 km: nunca se publica el punto exacto.
+export const SQL_APPROX_LAT = 'round(p.latitude::numeric, 2)::double precision';
+export const SQL_APPROX_LNG = 'round(p.longitude::numeric, 2)::double precision';
+export const SQL_PHOTO_IDS = "coalesce((SELECT array_agg(f.id::text ORDER BY f.sort_order) FROM public.publication_photos f WHERE f.publication_id=p.id),'{}')";
+
 export function photoUrl(publicationId, photoId) {
   return `/publications/${publicationId}/photos/${photoId}`;
 }
@@ -91,13 +108,14 @@ export function photoUrl(publicationId, photoId) {
 export async function searchPublications(database, filters) {
   const { type, category, terms, neighborhood, from, to, sort, lat, lng, page, pageSize } = filters;
   const values = [type];
-  const where = ['p.type=$1', "p.status IN ('open','in_claim')"];
+  // Visibles: abiertas sin vencer o en reclamo.
+  const where = ['p.type=$1', "(p.status='claimed' OR (p.status='open' AND p.expires_at>now()))"];
   const param = value => { values.push(value); return `$${values.length}`; };
 
   if (category) where.push(`p.category=${param(category)}`);
   if (neighborhood) where.push(`lower(p.neighborhood)=lower(${param(neighborhood)})`);
-  if (from) where.push(`p.occurred_on>=${param(from)}::date`);
-  if (to) where.push(`p.occurred_on<=${param(to)}::date`);
+  if (from) where.push(`${SQL_OCCURRED_DATE}>=${param(from)}::date`);
+  if (to) where.push(`${SQL_OCCURRED_DATE}<=${param(to)}::date`);
   for (const term of terms) {
     const escaped = term.replace(/[\\%_]/g, match => '\\' + match);
     where.push(`translate(lower(p.title||' '||p.description),'áéíóúüñ','aeiouun') LIKE ${param(`%${escaped}%`)} ESCAPE '\\'`);
@@ -107,16 +125,16 @@ export async function searchPublications(database, filters) {
   if (lat !== null) {
     const latParam = param(lat), lngParam = param(lng);
     // Distancia aproximada (fórmula equirectangular) sobre las coordenadas ya redondeadas a ~1km,
-    // así ninguna consulta repetida permite triangular el punto exacto.
-    distanceExpr = `round((sqrt(power((p.approx_latitude-${latParam})*111.32,2)+power((p.approx_longitude-${lngParam})*111.32*cos(radians(${latParam})),2)))::numeric,1)::double precision`;
+    // así ninguna consulta repetida permite triangular el punto exacto. Sin coordenadas queda NULL y va al final.
+    distanceExpr = `round((sqrt(power((${SQL_APPROX_LAT}-${latParam})*111.32,2)+power((${SQL_APPROX_LNG}-${lngParam})*111.32*cos(radians(${latParam})),2)))::numeric,1)::double precision`;
   }
-  const order = sort === 'nearest' ? 'distance_km ASC, p.occurred_on DESC, p.id' : 'p.occurred_on DESC, p.created_at DESC, p.id';
+  const order = sort === 'nearest' ? 'distance_km ASC NULLS LAST, p.occurred_at DESC, p.id' : 'p.occurred_at DESC, p.created_at DESC, p.id';
   const limitParam = param(pageSize);
   const offsetParam = param((page - 1) * pageSize);
 
-  const sql = `SELECT p.id,p.type,p.title,p.category,p.neighborhood,to_char(p.occurred_on,'YYYY-MM-DD') AS occurred_on,p.time_slot,p.status,
-      p.approx_latitude,p.approx_longitude,p.created_at,${distanceExpr} AS distance_km,
-      coalesce((SELECT array_agg(f.id::text ORDER BY f.position) FROM public.publication_photos f WHERE f.publication_id=p.id),'{}') AS photo_ids,
+  const sql = `SELECT p.id,p.type,p.title,p.category,p.neighborhood,p.occurred_at,${SQL_OCCURRED_ON} AS occurred_on,${SQL_TIME_SLOT} AS time_slot,
+      ${SQL_STATUS} AS status,${SQL_APPROX_LAT} AS approx_latitude,${SQL_APPROX_LNG} AS approx_longitude,p.created_at,${distanceExpr} AS distance_km,
+      ${SQL_PHOTO_IDS} AS photo_ids,
       count(*) OVER()::integer AS total
     FROM public.publications p WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ${limitParam} OFFSET ${offsetParam}`;
 
@@ -128,6 +146,7 @@ export async function searchPublications(database, filters) {
     title: row.title,
     category: row.category,
     neighborhood: row.neighborhood,
+    occurred_at: row.occurred_at,
     occurred_on: row.occurred_on,
     time_slot: row.time_slot,
     status: row.status,

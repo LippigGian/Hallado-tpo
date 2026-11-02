@@ -5,20 +5,18 @@ import MeetingPointDemoScreen from '../screens/MeetingPointDemoScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import OfflineDemoScreen from '../screens/OfflineDemoScreen';
 import UnlockScreen from '../screens/UnlockScreen';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import PublishPublicationScreen from '../screens/PublishPublicationScreen';
 import MyPublicationsScreen from '../screens/MyPublicationsScreen';
 import CreateClaimScreen from '../screens/CreateClaimScreen';
 import MyClaimsScreen from '../screens/MyClaimsScreen';
 import ClaimDetailScreen from '../screens/ClaimDetailScreen';
 import ClaimDemoScreen from '../screens/ClaimDemoScreen';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
 import SearchResultsScreen from '../screens/SearchResultsScreen';
 import PublicationDetailScreen from '../screens/PublicationDetailScreen';
-import PendingFeatureScreen from '../screens/PendingFeatureScreen';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -44,9 +42,9 @@ export default function AppNavigator() {
         })} />
         <Stack.Screen name="SearchResults" component={SearchResultsScreen} options={{ title: 'Resultados' }} />
         <Stack.Screen name="PublicationDetail" component={PublicationDetailScreen} options={{ title: 'Publicación' }} />
-        <Stack.Screen name="ClaimStart" component={PendingFeatureScreen} options={{ title: 'Reclamar' }} />
-        <Stack.Screen name="ManagePublication" component={PendingFeatureScreen} options={{ title: 'Gestionar publicación' }} />
-        <Stack.Screen name="Publish" component={PendingFeatureScreen} options={{ title: 'Publicar' }} />
+        <Stack.Screen name="ClaimStart" component={CreateClaimScreen} options={{ title: 'Reclamar' }} />
+        <Stack.Screen name="ManagePublication" component={MyPublicationsScreen} options={{ title: 'Mis publicaciones' }} />
+        <Stack.Screen name="Publish" component={PublishPublicationScreen} options={{ title: 'Nueva publicación' }} />
         <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Menú' }} />
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Mi perfil' }} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Editar perfil' }} />
