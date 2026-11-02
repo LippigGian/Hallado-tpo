@@ -178,7 +178,7 @@ export default function SearchResultsScreen({ route, navigation }) {
       contentContainerStyle={styles.contenedor}
       data={resultados}
       keyExtractor={item => String(item.id)}
-      renderItem={({ item }) => <PublicationCard publicacion={item} />}
+      renderItem={({ item }) => <PublicationCard publicacion={item} onPress={() => navigation.navigate('PublicationDetail', { publicationId: item.id })} />}
       ListHeaderComponent={header}
       onEndReached={cargarMas}
       onEndReachedThreshold={0.4}

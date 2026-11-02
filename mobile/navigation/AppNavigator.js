@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
 import SearchResultsScreen from '../screens/SearchResultsScreen';
+import PublicationDetailScreen from '../screens/PublicationDetailScreen';
 import PendingFeatureScreen from '../screens/PendingFeatureScreen';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from '../screens/LoginScreen';
@@ -35,6 +36,9 @@ export default function AppNavigator() {
           </TouchableOpacity>,
         })} />
         <Stack.Screen name="SearchResults" component={SearchResultsScreen} options={{ title: 'Resultados' }} />
+        <Stack.Screen name="PublicationDetail" component={PublicationDetailScreen} options={{ title: 'Publicación' }} />
+        <Stack.Screen name="ClaimStart" component={PendingFeatureScreen} options={{ title: 'Reclamar' }} />
+        <Stack.Screen name="ManagePublication" component={PendingFeatureScreen} options={{ title: 'Gestionar publicación' }} />
         <Stack.Screen name="Publish" component={PendingFeatureScreen} options={{ title: 'Publicar' }} />
         <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Menú' }} />
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Mi perfil' }} />
