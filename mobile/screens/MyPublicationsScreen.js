@@ -50,6 +50,7 @@ export default function MyPublicationsScreen({ navigation, route }) {
     <View>
       {!!route.params?.justPublished && <Text style={styles.success} accessibilityLiveRegion="polite">¡Tu publicación ya está en Hallado!</Text>}
       <PrimaryButton title="Nueva publicación" onPress={() => navigation.navigate('PublishPublication')} style={styles.newButton} />
+      <PrimaryButton title="Ver reclamos recibidos" variant="secondary" onPress={() => navigation.navigate('MyClaims', { tab: 'received' })} style={styles.newButton} />
       {!!error && <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text>}
     </View>
   );

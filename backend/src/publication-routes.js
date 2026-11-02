@@ -7,6 +7,8 @@ import {
   createPublication, findPublication, findPublicationPhoto, listUserPublications, renewPublication,
 } from './publication-service.js';
 import { serializePublication } from './publication-view.js';
+import { expireClaimsMiddleware } from './claim-expiration.js';
+import { hasAcceptedClaim } from './claim-service.js';
 
 const CREATE_BODY_LIMIT = '15mb';
 
@@ -17,6 +19,7 @@ function limiter(windowMs, limit, message) {
 export function publicationRouter(database, tokens) {
   const router = Router();
   const requireSession = createRequireSession(database, tokens);
+  const authenticated = [requireSession, expireClaimsMiddleware(database)];
 
   router.get('/:id/photos/:photoId',
     limiter(60_000, 300, 'Demasiadas solicitudes de fotos. Intentá más tarde.'),
@@ -39,7 +42,7 @@ export function publicationRouter(database, tokens) {
   });
   router.use(limiter(60_000, 100, 'Demasiadas solicitudes. Intentá más tarde.'));
 
-  router.get('/mine', requireSession, async (req, res) => {
+  router.get('/mine', ...authenticated, async (req, res) => {
     try {
       const rows = await listUserPublications(database, req.userId);
       res.json({ publications: rows.map(row => serializePublication(row, req.userId)) });
@@ -48,12 +51,13 @@ export function publicationRouter(database, tokens) {
     }
   });
 
-  router.get('/:id', requireSession, async (req, res) => {
+  router.get('/:id', ...authenticated, async (req, res) => {
     if (!isUuid(req.params.id)) return res.status(400).json({ error: 'Identificador inválido.' });
     try {
       const row = await findPublication(database, req.params.id);
       if (!row) return res.status(404).json({ error: 'Publicación no encontrada.' });
-      res.json({ publication: serializePublication(row, req.userId) });
+      const exactLocation = await hasAcceptedClaim(database, row.id, req.userId);
+      res.json({ publication: serializePublication(row, req.userId, { exactLocation }) });
     } catch {
       res.status(503).json({ error: 'No se pudo cargar la publicación.' });
     }
@@ -74,7 +78,7 @@ export function publicationRouter(database, tokens) {
       }
     });
 
-  router.post('/:id/renew', requireSession, async (req, res) => {
+  router.post('/:id/renew', ...authenticated, async (req, res) => {
     if (!isUuid(req.params.id)) return res.status(400).json({ error: 'Identificador inválido.' });
     try {
       const result = await renewPublication(database, req.params.id, req.userId);
