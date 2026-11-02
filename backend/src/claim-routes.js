@@ -8,6 +8,8 @@ import { createClaim, decideClaim, findClaim, findClaimPhoto, listClaims } from 
 import { isParticipant, serializeClaim } from './claim-view.js';
 import { findPublication } from './publication-service.js';
 import { isUuid } from './uuid.js';
+import { serializeAgreement, validateProposal } from './meeting-point-rules.js';
+import { acceptLastProposal, addProposal, listProposals } from './meeting-point-service.js';
 
 const CREATE_BODY_LIMIT = '4mb';
 
@@ -17,6 +19,17 @@ const CREATE_FAILURES = {
   closed: { status: 409, error: 'La publicación ya no admite reclamos.' },
   attempts_exhausted: { status: 409, error: `Ya usaste los ${CLAIM_RULES.maxAttempts} intentos de reclamo para esta publicación.` },
   already_pending: { status: 409, error: 'Ya tenés un reclamo pendiente en esta publicación.' },
+};
+
+// Punto 8: acuerdo del punto de encuentro.
+const MEETING_FAILURES = {
+  not_found: { status: 404, error: 'Reclamo no encontrado.' },
+  claim_not_accepted: { status: 409, error: 'El punto de encuentro se acuerda una vez aceptado el reclamo.' },
+  already_agreed: { status: 409, error: 'El punto de encuentro ya fue acordado.' },
+  not_holder: { status: 409, error: 'El primer punto de encuentro lo propone quien tiene el objeto.' },
+  own_turn: { status: 409, error: 'Esperá la respuesta de la otra persona antes de proponer otro punto.' },
+  no_proposal: { status: 409, error: 'Todavía no hay un punto de encuentro propuesto.' },
+  own_proposal: { status: 409, error: 'No podés aceptar tu propia propuesta.' },
 };
 
 const DECISION_FAILURES = {
@@ -123,6 +136,47 @@ export function claimRouter(database, tokens) {
         res.status(503).json({ error: 'No se pudo guardar el reclamo. Intentá nuevamente.' });
       }
     });
+
+  async function sendAgreement(res, claim, userId, status = 200) {
+    res.status(status).json({ meeting_point: serializeAgreement(claim, await listProposals(database, claim.id), userId) });
+  }
+
+  router.get('/:id/meeting-point', ...authenticated, async (req, res) => {
+    try {
+      const claim = await loadParticipantClaim(req, res);
+      if (claim) await sendAgreement(res, claim, req.userId);
+    } catch {
+      res.status(503).json({ error: 'No se pudo cargar el punto de encuentro.' });
+    }
+  });
+
+  router.post('/:id/meeting-point/proposals', ...authenticated, express.json({ limit: '10kb' }), async (req, res) => {
+    try {
+      const claim = await loadParticipantClaim(req, res);
+      if (!claim) return;
+      const { error, value } = validateProposal(req.body);
+      if (error) return res.status(400).json({ error });
+      const result = await addProposal(database, claim.id, req.userId, value);
+      const failure = MEETING_FAILURES[result.outcome];
+      if (failure) return res.status(failure.status).json({ error: failure.error });
+      await sendAgreement(res, claim, req.userId, 201);
+    } catch {
+      res.status(503).json({ error: 'No se pudo guardar la propuesta. Intentá nuevamente.' });
+    }
+  });
+
+  router.post('/:id/meeting-point/accept', ...authenticated, async (req, res) => {
+    try {
+      const claim = await loadParticipantClaim(req, res);
+      if (!claim) return;
+      const result = await acceptLastProposal(database, claim.id, req.userId);
+      const failure = MEETING_FAILURES[result.outcome];
+      if (failure) return res.status(failure.status).json({ error: failure.error });
+      await sendAgreement(res, claim, req.userId);
+    } catch {
+      res.status(503).json({ error: 'No se pudo confirmar el punto de encuentro. Intentá nuevamente.' });
+    }
+  });
 
   router.post('/:id/accept', ...authenticated, decisionHandler('accept'));
   router.post('/:id/reject', ...authenticated, decisionHandler('reject'));

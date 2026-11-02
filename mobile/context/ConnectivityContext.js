@@ -4,8 +4,9 @@ import NetInfo from '@react-native-community/netinfo';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
 import {
-  ESTADO_PENDIENTE, listarPendientes, procesarPendientes, suscribirseAPendientes,
+  ESTADO_PENDIENTE, listarPendientes, procesarPendientes, registrarEnviadorPublicaciones, suscribirseAPendientes,
 } from '../services/offline/pendingPublications';
+import { createPublication } from '../services/publicationService';
 
 const ConnectivityContext = createContext({ isOnline: true, pendientes: [], ultimoEnvio: null, sincronizarPendientes: async () => {} });
 
@@ -27,6 +28,9 @@ export function ConnectivityProvider({ children }) {
   const [ultimoEnvio, setUltimoEnvio] = useState(null);
   const estabaEnLinea = useRef(true);
 
+  // Las publicaciones creadas sin conexión se envían con el mismo alta del punto 5.
+  useEffect(() => registrarEnviadorPublicaciones(createPublication), []);
+
   const sincronizarPendientes = useCallback(async () => {
     if (!userId) return null;
     const resumen = await procesarPendientes(userId);
@@ -42,7 +46,7 @@ export function ConnectivityProvider({ children }) {
   }), [sincronizarPendientes]);
 
   useEffect(() => {
-    if (!userId) { setPendientes([]); return undefined; }
+    if (!userId) return undefined;
     let activo = true;
     listarPendientes(userId).then(items => { if (activo) setPendientes(items); });
     // Al iniciar sesión con conexión, se intenta enviar lo que haya quedado pendiente.
@@ -53,11 +57,14 @@ export function ConnectivityProvider({ children }) {
     return () => { activo = false; desuscribir(); };
   }, [userId, sincronizarPendientes]);
 
+  // Sin sesión no se muestran pendientes (la cola es por usuario).
+  const visibles = userId ? pendientes : [];
+
   return (
     <ConnectivityContext.Provider value={{
       isOnline,
-      pendientes,
-      cantidadPendientes: pendientes.filter(p => p.estado === ESTADO_PENDIENTE).length,
+      pendientes: visibles,
+      cantidadPendientes: visibles.filter(p => p.estado === ESTADO_PENDIENTE).length,
       ultimoEnvio,
       sincronizarPendientes,
     }}>
