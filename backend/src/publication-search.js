@@ -121,10 +121,14 @@ export function photoUrl(publicationId, photoId) {
 // (abiertas sin vencer o en reclamo) que cumplen los criterios. `param(valor)` agrega el valor a
 // la lista de la consulta y devuelve su marcador ($n). La comparten el buscador (punto 3) y las
 // alertas (punto 9), así una alerta coincide exactamente con lo que mostraría la búsqueda.
+// Barrio comparable: sin espacios en los extremos, en minúsculas y sin tildes. El buscador elige
+// el barrio de una lista ("Agronomía") pero al publicar se escribe a mano ("agronomia ").
+const sqlComparableNeighborhood = expr => `translate(lower(btrim(${expr})),'áéíóúüñ','aeiouun')`;
+
 export function searchConditions({ type, category, terms = [], neighborhood, from, to }, param) {
   const where = [`p.type=${param(type)}`, "(p.status='claimed' OR (p.status='open' AND p.expires_at>now()))"];
   if (category) where.push(`p.category=${param(category)}`);
-  if (neighborhood) where.push(`lower(p.neighborhood)=lower(${param(neighborhood)})`);
+  if (neighborhood) where.push(`${sqlComparableNeighborhood('p.neighborhood')}=${sqlComparableNeighborhood(param(neighborhood))}`);
   if (from) where.push(`${SQL_OCCURRED_DATE}>=${param(from)}::date`);
   if (to) where.push(`${SQL_OCCURRED_DATE}<=${param(to)}::date`);
   for (const term of terms) {

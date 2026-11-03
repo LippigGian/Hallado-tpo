@@ -210,6 +210,14 @@ test('GET /alerts devuelve cada alerta con sus publicaciones nuevas, excluyendo 
   assert.ok(count.values.includes('%llavero%') && count.values.includes('%azul%'));
 });
 
+test('el barrio se compara sin tildes, mayúsculas ni espacios en los extremos', async () => {
+  const database = makeDatabase({ alerts: [alertRow({ neighborhood: 'Agronomía' })] });
+  await withServer(database, async request => { await request('/alerts'); });
+  const count = database.calls.find(call => /count\(\*\)::integer AS c FROM public\.publications p/.test(call.sql));
+  assert.match(count.sql, /translate\(lower\(btrim\(p\.neighborhood\)\),'áéíóúüñ','aeiouun'\)=translate\(lower\(btrim\(\$\d+\)\),'áéíóúüñ','aeiouun'\)/);
+  assert.ok(count.values.includes('Agronomía'));
+});
+
 test('la última vista se compara con microsegundos, no con el Date de JavaScript', async () => {
   // Un Date solo tiene milisegundos: .123456 pasaría a .123 y una publicación creada en .1234
   // (antes de la última vista) contaría como nueva.

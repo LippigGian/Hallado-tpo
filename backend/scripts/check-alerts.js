@@ -154,6 +154,21 @@ try {
   check(seguidas.body.publications.map(p => [p.status, p.previous_status, p.has_update]), [['expired', 'claimed', true]]);
   check((await request('/follows', { token: pedro.token })).body.publications, []);
 
+  // Barrio elegido de la lista en el buscador ("Agronomía") y escrito a mano al publicar
+  // ("agronomia ", sin tilde): tienen que coincidir, en el buscador y en la alerta.
+  const sufijo = randomUUID().slice(0, 8);
+  const conTilde = `Agronomía ${sufijo}`;
+  const aMano = `agronomia ${sufijo} `;
+  const otroBarrio = await createPublication(pedro, { neighborhood: aMano });
+  const busqueda = await request(`/publications?situation=lost&neighborhood=${encodeURIComponent(conTilde)}`);
+  check(busqueda.body.results.map(r => r.id), [otroBarrio]);
+  const primera = (await request('/alerts', { token: ana.token })).body.alerts[0];
+  check((await request(`/alerts/${primera.id}`, { method: 'DELETE', token: ana.token })).status, 200); // libera lugar (tope 10)
+  const alertaTilde = await request('/alerts', { method: 'POST', token: ana.token, body: { situation: 'lost', neighborhood: conTilde } });
+  check(alertaTilde.status, 201);
+  await client.query("UPDATE public.search_alerts SET last_seen_at=now()-interval '1 hour' WHERE id=$1", [alertaTilde.body.alert.id]);
+  check((await request('/alerts', { token: ana.token })).body.alerts.find(a => a.id === alertaTilde.body.alert.id).new_count, 1);
+
   console.log(`${checks} verificaciones HTTP/PostgreSQL correctas: alertas con fechas concretas, mismas coincidencias que el buscador sin las propias, novedades desde la última vista, pausa, eliminación, tope, duplicados y novedades de estado en las seguidas.`);
 } finally {
   await new Promise(resolve => { server.close(resolve); server.closeAllConnections(); });
