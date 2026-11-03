@@ -142,7 +142,7 @@ export async function searchPublications(database, filters) {
   const param = value => { values.push(value); return `$${values.length}`; };
   const where = searchConditions(filters, param);
   if (excludeUserId) where.push(`p.user_id<>${param(excludeUserId)}`);
-  const isNewExpr = newSince ? `(p.created_at>${param(newSince)})` : 'NULL::boolean';
+  const isNewExpr = newSince ? `(p.created_at>${param(newSince)}::timestamptz)` : 'NULL::boolean';
 
   let distanceExpr = 'NULL::double precision';
   if (lat !== null) {

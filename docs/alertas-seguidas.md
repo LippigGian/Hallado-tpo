@@ -73,6 +73,7 @@ Cualquier búsqueda se puede guardar como alerta. En "Mis alertas" se ve cuánta
 
 ## Verificación
 
-- Desde `backend/`: `npm test`, 68 tests con mocks y sin PostgreSQL.
+- Desde `backend/`: `npm test`, 69 tests con mocks y sin PostgreSQL.
+- Contra la base compartida de Neon: `npm run test:alerts -- --with-migration` pasó las 43 comprobaciones, con la 009 aplicada solo dentro de la transacción y deshecha al terminar. Esta prueba encontró un error que el mock no veía: un `Date` de JavaScript pierde los microsegundos de `last_seen_at`. Ahora la comparación usa `last_seen_at::text`.
 - Desde `mobile/`: `node --test "scripts/*.test.mjs"`, 48 tests. `npx expo lint` da los mismos 3 errores previos de `AuthFlow.js` que hay en `main`, y `npx expo export --platform android` compila.
-- **Pendiente:** correr `npm run test:alerts` contra PostgreSQL y probar en el emulador con la 009 aplicada. Hasta ahora no hubo una base disponible para hacerlo.
+- **Pendiente:** aplicar la 009 en Neon (`npm run db:migrate`) y probar en el emulador siguiendo "Probar desde Android".

@@ -210,6 +210,21 @@ test('GET /alerts devuelve cada alerta con sus publicaciones nuevas, excluyendo 
   assert.ok(count.values.includes('%llavero%') && count.values.includes('%azul%'));
 });
 
+test('la última vista se compara con microsegundos, no con el Date de JavaScript', async () => {
+  // Un Date solo tiene milisegundos: .123456 pasaría a .123 y una publicación creada en .1234
+  // (antes de la última vista) contaría como nueva.
+  const exact = '2026-11-01 12:00:00.123456+00';
+  const database = makeDatabase({ alerts: [alertRow({ last_seen_exact: exact })] });
+  await withServer(database, async request => {
+    await request('/alerts');
+    await request(`/alerts/${alertId}/publications`);
+  });
+  const count = database.calls.find(call => /count\(\*\)::integer AS c FROM public\.publications p/.test(call.sql));
+  const search = database.calls.find(call => /ORDER BY p\.created_at DESC/.test(call.sql));
+  assert.ok(count.values.includes(exact));
+  assert.ok(search.values.includes(exact));
+});
+
 test('POST /alerts crea la alerta, rechaza duplicados y respeta el tope', async () => {
   const body = { situation: 'lost', category: 'pets', neighborhood: 'Caballito', date_preset: 'semana', date_from: '2026-10-27', date_to: '2026-11-02' };
   const ok = makeDatabase({ alerts: [] });
@@ -270,7 +285,7 @@ test('GET /alerts/:id/publications lista coincidencias marcando las nuevas, sin 
     assert.equal(body.total, 2);
   });
   const search = database.calls.find(call => /ORDER BY p\.created_at DESC/.test(call.sql));
-  assert.match(search.sql, /\(p\.created_at>\$\d+\) AS is_new/);
+  assert.match(search.sql, /\(p\.created_at>\$\d+::timestamptz\) AS is_new/);
   assert.match(search.sql, /p\.user_id<>\$\d+/);
   assert.equal(database.calls.some(call => /UPDATE public\.search_alerts/.test(call.sql)), false);
 });

@@ -9,8 +9,14 @@ import {
 
 // Las fechas se devuelven como texto AAAA-MM-DD: `pg` convierte `date` a Date en la zona local
 // del servidor y podría correrlas un día.
+// `last_seen_exact`: last_seen_at como texto con microsegundos, para compararlo en SQL. Un Date
+// de JavaScript solo tiene milisegundos: si se usara, una publicación creada en el mismo
+// milisegundo pero antes de la última vista contaría como nueva.
 const ALERT_COLUMNS = `id,situation,category,neighborhood,keywords,date_preset,
-  to_char(date_from,'YYYY-MM-DD') AS date_from,to_char(date_to,'YYYY-MM-DD') AS date_to,paused,last_seen_at,created_at`;
+  to_char(date_from,'YYYY-MM-DD') AS date_from,to_char(date_to,'YYYY-MM-DD') AS date_to,paused,last_seen_at,
+  last_seen_at::text AS last_seen_exact,created_at`;
+
+const lastSeen = row => row.last_seen_exact ?? row.last_seen_at;
 
 // Criterios de la alerta -> filtros del buscador.
 export function alertFilters(row) {
@@ -47,7 +53,7 @@ async function countNewMatches(database, row, userId) {
   const values = [];
   const param = value => { values.push(value); return `$${values.length}`; };
   const where = searchConditions(alertFilters(row), param);
-  where.push(`p.user_id<>${param(userId)}`, `p.created_at>${param(row.last_seen_at)}`);
+  where.push(`p.user_id<>${param(userId)}`, `p.created_at>${param(lastSeen(row))}::timestamptz`);
   const result = await database.query(`SELECT count(*)::integer AS c FROM public.publications p WHERE ${where.join(' AND ')}`, values);
   return result.rows[0]?.c ?? 0;
 }
@@ -131,7 +137,7 @@ export async function alertPublications(database, id, userId, page = 1) {
     page,
     pageSize: 10,
     excludeUserId: userId,
-    newSince: row.paused ? null : row.last_seen_at,
+    newSince: row.paused ? null : lastSeen(row),
   });
   const results = search.results.map(result => ({ ...result, is_new: Boolean(result.is_new) }));
   return { alert: await withCount(database, row, userId), ...search, results };
