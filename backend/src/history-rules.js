@@ -4,6 +4,7 @@
 import { CATEGORIES } from './publication-search.js';
 import { todayInArgentina } from './alert-validation.js';
 import { publicationPhotoPath } from './publication-view.js';
+import { serializeRating } from './feedback-rules.js';
 
 export const HISTORY_PERIODS = ['mes', '3meses', 'anio', 'todo'];
 const DEFAULT_NAME = 'Vecino de Hallado';
@@ -46,7 +47,9 @@ export function parseHistoryQuery(query = {}, now = new Date()) {
 }
 
 // Fila de la consulta -> caso del historial, visto por quien lo pide.
-export function serializeHistoryItem(row) {
+// role: 'returner' (pestaña Devolví) o 'recoverer' (pestaña Recuperé).
+export function serializeHistoryItem(row, role) {
+  const open = Boolean(row.feedback_open);
   return {
     id: row.id,
     claim_id: row.claim_id,
@@ -59,5 +62,15 @@ export function serializeHistoryItem(row) {
       cover_photo_url: row.cover_photo_id ? publicationPhotoPath(row.publication_id, row.cover_photo_id) : null,
     },
     counterpart: { id: row.counterpart_id, name: row.counterpart_name || DEFAULT_NAME },
+    // Valoraciones y agradecimiento (hasta FEEDBACK_DAYS días después de la devolución).
+    feedback: {
+      until: row.feedback_until,
+      open,
+      given_rating: serializeRating(row.given_rating),
+      received_rating: serializeRating(row.received_rating),
+      thanks: row.thanks ? { message: row.thanks.message, created_at: row.thanks.created_at } : null,
+      can_rate: open && !row.given_rating,
+      can_thank: open && role === 'recoverer' && !row.thanks,
+    },
   };
 }
