@@ -33,8 +33,11 @@ export function validateProposal(input) {
 }
 
 // Decide si `userId` puede proponer (o sugerir otro punto) / aceptar. Devuelve el motivo si no puede.
+// claim.return_id: la devolución ya fue confirmada (punto 10) y no queda nada que coordinar.
+// Lo traen tanto lockClaim como findClaim (SELECT_CLAIM), así la vista y el 409 coinciden.
 export function proposalOutcome(claim, proposals, userId) {
   if (claim.status !== 'accepted') return 'claim_not_accepted';
+  if (claim.return_id) return 'already_returned';
   if (proposals.some(p => p.accepted_at)) return 'already_agreed';
   const last = proposals.at(-1);
   if (!last) return holderId(claim) === userId ? 'ok' : 'not_holder';
@@ -43,6 +46,7 @@ export function proposalOutcome(claim, proposals, userId) {
 
 export function acceptOutcome(claim, proposals, userId) {
   if (claim.status !== 'accepted') return 'claim_not_accepted';
+  if (claim.return_id) return 'already_returned';
   if (proposals.some(p => p.accepted_at)) return 'already_agreed';
   const last = proposals.at(-1);
   if (!last) return 'no_proposal';

@@ -54,6 +54,13 @@ test('acepta solo la otra parte la última propuesta, y una sola vez', () => {
   assert.equal(proposalOutcome(ownerClaim, [proposal(publisher, { accepted_at: new Date() })], claimant), 'already_agreed');
 });
 
+test('con la devolución confirmada (punto 10) no se propone ni se acepta', () => {
+  const returned = { ...ownerClaim, return_id: 'r1' };
+  assert.equal(proposalOutcome(returned, [], publisher), 'already_returned');
+  assert.equal(acceptOutcome(returned, [proposal(publisher)], claimant), 'already_returned');
+  assert.equal(proposalOutcome({ ...returned, status: 'pending' }, [], publisher), 'claim_not_accepted');
+});
+
 test('la vista del acuerdo indica estado, rol y qué puede hacer quien mira', () => {
   const empty = serializeAgreement(ownerClaim, [], publisher);
   assert.equal(empty.estado, 'sin_propuesta');
@@ -170,4 +177,17 @@ test('HTTP: no se acuerda punto de encuentro en un reclamo pendiente', async () 
     assert.equal(response.status, 409);
     assert.match(response.body.error, /aceptado el reclamo/);
   });
+});
+
+test('HTTP: con la devolución confirmada, 409 al proponer y al aceptar, pero se puede consultar', async () => {
+  const database = makeDatabase({ claim: { ...ownerClaim, return_id: 'r1' }, proposals: [proposal(publisher)] });
+  await withServer(database, async call => {
+    const propose = await call(`${path}/proposals`, claimant, { method: 'POST', body: punto });
+    assert.deepEqual([propose.status, propose.body.error], [409, 'La devolución ya fue confirmada; ya no hace falta acordar un punto de encuentro.']);
+    assert.equal((await call(`${path}/accept`, claimant, { method: 'POST' })).status, 409);
+    const read = await call(path, claimant);
+    assert.deepEqual([read.status, read.body.meeting_point.estado], [200, 'propuesto']);
+    assert.deepEqual([read.body.meeting_point.puedeProponer, read.body.meeting_point.puedeResponder], [false, false]);
+  });
+  assert.equal(database.state.proposals.length, 1);
 });

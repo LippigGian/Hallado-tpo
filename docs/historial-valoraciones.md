@@ -96,7 +96,7 @@ Cuando quien recupera el objeto confirma la devolución, el caso queda resuelto 
 ## Integración con las demás partes
 
 - **Reclamos (punto 7):** la devolución parte de un reclamo `accepted`. `serializeClaim` agrega el campo `return`.
-- **Punto de encuentro (punto 8):** comparte la regla de quién tiene el objeto. No es requisito para confirmar. Después de la devolución, la app oculta la sección, pero el backend todavía acepta propuestas: bloquearlas con un 409 es un cambio chico, a decidir.
+- **Punto de encuentro (punto 8):** comparte la regla de quién tiene el objeto. No es requisito para confirmar. Después de la devolución, la app oculta la sección y el backend responde 409 a proponer y a aceptar (`already_returned` en `meeting-point-rules.js`). `GET /meeting-point` sigue respondiendo, con `puedeProponer` y `puedeResponder` en `false`.
 - **Perfil y reputación (punto 2):** se usa `recordReputationEvent` dentro de la transacción de cada caso de uso. No hubo que cambiar `readReputation` ni `ProfileSummary`.
 - **Alertas y seguidas (punto 9):** quien sigue la publicación ve el cambio a "Resuelta" sin cambios en ese punto.
 
@@ -107,12 +107,11 @@ Cuando quien recupera el objeto confirma la devolución, el caso queda resuelto 
 - El agradecimiento tiene el mismo plazo de 7 días que la valoración.
 - Alcanza con un reclamo aceptado; el punto de encuentro no es obligatorio.
 - Una valoración por parte y por caso, sin edición, con mensaje opcional de hasta 200 caracteres.
+- Con la devolución confirmada, no se puede proponer ni aceptar punto de encuentro (409).
 
 ## Verificación
 
-- Desde `backend/`: `npm test`, 86 tests con mocks y sin PostgreSQL.
-- Desde `mobile/`: `node --test "scripts/*.test.mjs"`, 52 tests. `npx eslint` sobre los archivos nuevos y modificados no da errores.
-- **Pendiente:**
-  - Correr `npm run test:returns -- --with-migration` contra Neon.
-  - Aplicar la 010 (`npm run db:migrate`) y correr `npm run test:returns`.
-  - Probar en el emulador siguiendo "Probar desde Android".
+- Desde `backend/`: `npm test`, 88 tests con mocks y sin PostgreSQL.
+- Contra Neon: la 010 está aplicada. `npm run test:returns` pasó las 39 comprobaciones; `test:meeting-point` (24) y `test:claims` (86) siguen pasando. Todo corre dentro de transacciones que se deshacen.
+- Desde `mobile/`: `node --test "scripts/*.test.mjs"`, 52 tests. `npx expo lint` da los mismos 3 errores previos de `AuthFlow.js` que hay en `main`, y `npx expo export --platform android` compila.
+- **Pendiente:** probar en el emulador siguiendo "Probar desde Android".

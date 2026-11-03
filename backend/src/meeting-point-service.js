@@ -6,7 +6,8 @@ const SELECT_PROPOSALS = `SELECT id, claim_id, proposed_by, address, schedule, r
 // Datos del reclamo que necesitan las reglas; FOR UPDATE serializa dos respuestas simultáneas.
 async function lockClaim(client, claimId) {
   const result = await client.query(
-    `SELECT c.id, c.kind, c.status, c.claimant_id, p.user_id AS publisher_id
+    `SELECT c.id, c.kind, c.status, c.claimant_id, p.user_id AS publisher_id,
+            (SELECT r.id FROM public.returns r WHERE r.claim_id = c.id) AS return_id
        FROM public.claims c JOIN public.publications p ON p.id = c.publication_id
       WHERE c.id = $1 FOR UPDATE OF c`,
     [claimId],

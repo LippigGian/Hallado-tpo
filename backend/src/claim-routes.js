@@ -31,6 +31,7 @@ const MEETING_FAILURES = {
   own_turn: { status: 409, error: 'Esperá la respuesta de la otra persona antes de proponer otro punto.' },
   no_proposal: { status: 409, error: 'Todavía no hay un punto de encuentro propuesto.' },
   own_proposal: { status: 409, error: 'No podés aceptar tu propia propuesta.' },
+  already_returned: { status: 409, error: 'La devolución ya fue confirmada; ya no hace falta acordar un punto de encuentro.' },
 };
 
 // Punto 10: devolución concretada.

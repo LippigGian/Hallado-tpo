@@ -106,6 +106,13 @@ try {
   check((await client.query('SELECT status FROM public.publications WHERE id=$1', [llaves])).rows[0].status, 'resolved');
   check((await request(`/claims/${reclamoDni}/return`, { method: 'POST', token: ana.token })).status, 200);
 
+  // Con la devolución confirmada ya no se acuerda punto de encuentro, pero se puede consultar.
+  const punto = { direccion: 'Plaza Serrano, Palermo', horario: 'Sábado 11 h' };
+  check((await request(`/claims/${reclamoLlaves}/meeting-point/proposals`, { method: 'POST', token: ana.token, body: punto })).status, 409);
+  check((await request(`/claims/${reclamoLlaves}/meeting-point/accept`, { method: 'POST', token: pedro.token })).status, 409);
+  const acuerdo = await request(`/claims/${reclamoLlaves}/meeting-point`, { token: ana.token });
+  check([acuerdo.status, acuerdo.body.meeting_point.puedeProponer], [200, false]);
+
   const casos = (await client.query('SELECT id, claim_id FROM public.returns WHERE claim_id = ANY($1)', [[reclamoLlaves, reclamoDni]])).rows;
   const caso1 = casos.find(row => row.claim_id === reclamoLlaves).id;
   const caso2 = casos.find(row => row.claim_id === reclamoDni).id;
