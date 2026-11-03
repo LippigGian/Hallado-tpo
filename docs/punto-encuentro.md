@@ -17,8 +17,8 @@ Una vez aceptado un reclamo (punto 7), las dos personas acuerdan dónde y cuánd
 - `src/meeting-point-service.js`: consultas; proponer y aceptar bloquean el reclamo (`FOR UPDATE`) para que dos respuestas simultáneas no se pisen.
 - Rutas en `src/claim-routes.js` (sesión obligatoria, solo las dos partes del reclamo):
   - `GET /claims/:id/meeting-point` → `{ meeting_point: { estado, rol, puedeProponer, puedeResponder, propuestas, aceptado } }`. `estado`: `sin_propuesta`, `propuesto` o `aceptado`; `rol`: `tiene_objeto` u `otra_parte`.
-  - `POST /claims/:id/meeting-point/proposals` con `{ direccion, horario, referencia? }` → 201. 400 si los datos son inválidos; 409 si el reclamo no está aceptado, si ya hay acuerdo, si no le toca proponer a esa persona o si es la primera propuesta y no tiene el objeto.
-  - `POST /claims/:id/meeting-point/accept` → 200. 409 si no hay propuesta, si es la propia o si ya se acordó.
+  - `POST /claims/:id/meeting-point/proposals` con `{ direccion, horario, referencia? }` → 201. 400 si los datos son inválidos; 409 si el reclamo no está aceptado, si ya hay acuerdo, si no le toca proponer a esa persona o si es la primera propuesta y no tiene el objeto, o si la devolución ya fue confirmada (punto 10).
+  - `POST /claims/:id/meeting-point/accept` → 200. 409 si no hay propuesta, si es la propia, si ya se acordó o si la devolución ya fue confirmada.
 - Pruebas: `npm test` (`test/meeting-point.test.js`) y, con la 008 aplicada, `npm run test:meeting-point` contra PostgreSQL (todo dentro de una transacción que se deshace).
 
 ## App
@@ -36,4 +36,4 @@ Una vez aceptado un reclamo (punto 7), las dos personas acuerdan dónde y cuánd
 5. A ve la alternativa y la acepta. Las dos cuentas ven "Punto de encuentro confirmado" y el historial.
 6. "Cómo llegar" abre Google Maps en navegación. En el emulador puede no encontrar ruta porque su ubicación por defecto está en California; en un celular en Buenos Aires inicia la navegación.
 
-La devolución concretada y las valoraciones son del punto 10: al cerrar, pasar la publicación a `resolved` y registrar la reputación con `recordReputationEvent`.
+La devolución concretada y las valoraciones son del punto 10 ([historial-valoraciones.md](historial-valoraciones.md)). Quien recupera la confirma desde el detalle del reclamo, y a partir de ahí la app oculta esta sección.

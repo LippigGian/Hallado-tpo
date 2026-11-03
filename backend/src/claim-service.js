@@ -12,11 +12,13 @@ const SELECT_CLAIM = `
          p.address AS publication_address, p.latitude AS publication_latitude, p.longitude AS publication_longitude,
          p.verification_question, p.verification_answer AS expected_answer,
          (SELECT ph.id FROM public.publication_photos ph WHERE ph.publication_id = p.id ORDER BY ph.sort_order LIMIT 1) AS cover_photo_id,
-         claimant.name AS claimant_name, publisher.name AS publisher_name
+         claimant.name AS claimant_name, publisher.name AS publisher_name,
+         ret.id AS return_id, ret.returned_at
     FROM public.claims c
     JOIN public.publications p ON p.id = c.publication_id
     JOIN public.users claimant ON claimant.id = c.claimant_id
-    JOIN public.users publisher ON publisher.id = p.user_id`;
+    JOIN public.users publisher ON publisher.id = p.user_id
+    LEFT JOIN public.returns ret ON ret.claim_id = c.id`;
 
 export async function findClaim(database, id) {
   const result = await database.query(`${SELECT_CLAIM} WHERE c.id = $1`, [id]);

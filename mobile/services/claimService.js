@@ -25,6 +25,11 @@ export async function rejectClaim(id) {
   return (await api.post(`${claimPath(id)}/reject`)).data.claim;
 }
 
+// Punto 10: quien recupera el objeto confirma la devolución. Devuelve el reclamo actualizado.
+export async function confirmReturn(id) {
+  return (await api.post(`${claimPath(id)}/return`)).data.claim;
+}
+
 export async function getCounterpartPhone(userId, claimId) {
   const response = await api.get(`/profiles/${encodeURIComponent(userId)}/contact`, { params: { claimId } });
   return response.data.phone;

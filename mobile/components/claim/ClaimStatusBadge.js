@@ -9,8 +9,10 @@ const STATUS_COLORS = {
   expired: colors.muted,
 };
 
-export default function ClaimStatusBadge({ status }) {
-  return <Text style={[styles.badge, { color: STATUS_COLORS[status] }]}>{CLAIM_STATUS_LABELS[status] ?? status}</Text>;
+// returned: el reclamo aceptado ya tiene la devolución confirmada (punto 10).
+export default function ClaimStatusBadge({ status, returned = false }) {
+  const label = returned ? 'Devuelto' : (CLAIM_STATUS_LABELS[status] ?? status);
+  return <Text style={[styles.badge, { color: returned ? colors.primary : STATUS_COLORS[status] }]}>{label}</Text>;
 }
 
 const styles = StyleSheet.create({

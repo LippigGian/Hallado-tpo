@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getApiError } from '../services/api';
-import { acceptClaim, getClaim, getCounterpartPhone, rejectClaim } from '../services/claimService';
+import { acceptClaim, confirmReturn, getClaim, getCounterpartPhone, rejectClaim } from '../services/claimService';
 import { colors } from '../config/theme';
 import { CLAIM_ACTION_LABELS } from '../config/claimOptions';
 import { formatDateTime } from '../utils/dateTime';
@@ -12,6 +12,7 @@ import ClaimStatusBadge from '../components/claim/ClaimStatusBadge';
 import ClaimEvidence from '../components/claim/ClaimEvidence';
 import ClaimAcceptedInfo from '../components/claim/ClaimAcceptedInfo';
 import MeetingPointSection from '../components/meetingPoint/MeetingPointSection';
+import ClaimReturnSection from '../components/claim/ClaimReturnSection';
 
 const DECISIONS = {
   accept: {
@@ -72,6 +73,20 @@ export default function ClaimDetailScreen({ navigation, route }) {
     }
   }
 
+  // Punto 10: quien recupera confirma la devolución.
+  async function returnConfirmed() {
+    setBusy(true);
+    setError('');
+    try {
+      setClaim(await confirmReturn(claim.id));
+    } catch (returnError) {
+      setError(getApiError(returnError));
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function confirm(decision) {
     const { title, message, confirm: confirmLabel } = DECISIONS[decision];
     Alert.alert(title, message, [
@@ -87,12 +102,13 @@ export default function ClaimDetailScreen({ navigation, route }) {
   }
 
   const canDecide = claim.role === 'publisher' && claim.status === 'pending';
+  const returned = !!claim.return?.returned;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.kind}>{CLAIM_ACTION_LABELS[claim.kind]}</Text>
       <Text style={styles.title}>{claim.publication.title}</Text>
-      <ClaimStatusBadge status={claim.status} />
+      <ClaimStatusBadge status={claim.status} returned={returned} />
       {claim.status === 'pending' && <Text style={styles.text}>Vence el {formatDateTime(new Date(claim.expires_at))}</Text>}
       {!!CLOSED_MESSAGES[claim.status] && <Text style={styles.text}>{CLOSED_MESSAGES[claim.status]}</Text>}
 
@@ -116,7 +132,13 @@ export default function ClaimDetailScreen({ navigation, route }) {
         />
       )}
 
-      {accepted && <MeetingPointSection claimId={claim.id} counterpartName={counterpart.name} />}
+      {accepted && (
+        <ClaimReturnSection claim={claim} counterpartName={counterpart.name} busy={busy} onConfirm={returnConfirmed}
+          onOpenHistory={() => navigation.navigate('History')} />
+      )}
+
+      {/* Con la devolución concretada ya no hay nada que coordinar. */}
+      {accepted && !returned && <MeetingPointSection claimId={claim.id} counterpartName={counterpart.name} />}
 
       <ClaimEvidence claim={claim} />
 

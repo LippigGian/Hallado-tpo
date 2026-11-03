@@ -25,7 +25,7 @@ export default function ClaimCard({ claim, onPress }) {
         </View>
       </View>
       <View style={styles.footer}>
-        <ClaimStatusBadge status={claim.status} />
+        <ClaimStatusBadge status={claim.status} returned={!!claim.return?.returned} />
         {claim.status === 'pending' && <Text style={styles.text}>Vence el {formatDateTime(new Date(claim.expires_at))}</Text>}
       </View>
     </TouchableOpacity>
