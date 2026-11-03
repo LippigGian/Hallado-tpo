@@ -44,10 +44,10 @@ define el punto 5).
    buscador inicial, y hay chips para ordenar por "Más recientes" o "Más cercanos" (este
    último deshabilitado si no hay barrio ni ubicación elegidos).
 9. Una búsqueda sin resultados (por ejemplo una categoría/barrio poco usado en el seed)
-   ofrece "Publicar mi pérdida/hallazgo" (navega a un placeholder del punto 5) y "Guardar
-   búsqueda como alerta" (queda guardada en el dispositivo, ver sección siguiente).
-10. Las últimas búsquedas y las alertas guardadas se muestran en la pantalla inicial y se
-    repiten con un toque.
+   ofrece "Publicar mi pérdida/hallazgo". Cualquier búsqueda, con o sin resultados, ofrece
+   "Guardar búsqueda como alerta" (punto 9, ver `alertas-seguidas.md`).
+10. Las últimas búsquedas se muestran en la pantalla inicial y se repiten con un toque. Las
+    alertas están en Menú → "Mis alertas".
 11. Sin conexión (`adb shell svc wifi disable` y `adb shell svc data disable`, o avión en
     el emulador): la búsqueda muestra los últimos resultados guardados en el dispositivo
     con el aviso correspondiente; si la búsqueda nunca se hizo con conexión, avisa que no
@@ -100,13 +100,13 @@ define el punto 5).
   renovación son del punto 5 y comparten la tabla con el buscador (ver la sección
   "Integración con el punto 5" al final). La ruta `Publish` abre la pantalla real de
   publicación desde "sin resultados".
-- **Punto 9 (Alertas y publicaciones seguidas)**: "Guardar búsqueda como alerta" quedó
-  implementado 100% del lado del cliente (`mobile/services/search/recentSearches.js`,
-  clave `hallado.busquedas.<userId>` en AsyncStorage, con un flag `guardada:true` por
-  criterio). No hay tabla ni endpoint backend: el punto 9 puede leer
-  `listarBusquedas(userId)` para migrar estas alertas a un backend real cuando lo
-  implemente. La semántica de `situation` (tipo opuesto) vive en
-  `backend/src/publication-search.js` y se puede reutilizar para el matching de alertas.
+- **Punto 9 (Alertas y publicaciones seguidas)**: ya integrado (ver `alertas-seguidas.md`).
+  "Guardar búsqueda como alerta" guarda la búsqueda en el backend (`POST /alerts`), con la
+  fecha como rango concreto. Las coincidencias de las alertas usan las mismas condiciones
+  que el buscador (`searchConditions` en `backend/src/publication-search.js`), así que un
+  cambio en los filtros se refleja en las dos. Las alertas que antes quedaban solo en el
+  dispositivo (flag `guardada` en `recentSearches.js`) se suben solas al backend y se quitan
+  del dispositivo (`mobile/services/alerts/localAlertsMigration.js`).
 - **Punto 6 (Modo sin conexión)**: ya integrado. El buscador llama a
   `guardarResultadosBusqueda` después de cada búsqueda exitosa con conexión, y
   `obtenerResultadosGuardados` cuando no hay conexión o falla la petición.

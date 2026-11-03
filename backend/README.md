@@ -103,7 +103,7 @@ Punto 8: una vez aceptado un reclamo, quien tiene el objeto propone dónde y cu�
 
 ## Alertas y publicaciones seguidas
 
-Punto 9: guardar búsquedas como alertas (con fechas concretas), pausarlas o eliminarlas, contar las publicaciones nuevas que coinciden con cada una, listar las publicaciones seguidas y detectar cuándo cambian de estado. Migración `009_alerts.sql` (tabla `search_alerts` y columna `last_seen_status` en `publication_follows`).
+Punto 9: guardar búsquedas como alertas (con fechas concretas), pausarlas o eliminarlas, contar las publicaciones nuevas que coinciden con cada una, listar las publicaciones seguidas y detectar cuándo cambian de estado. Migración `009_alerts.sql` (tabla `search_alerts` y columna `last_seen_status` en `publication_follows`). Reglas, endpoints y cómo probar en `../docs/alertas-seguidas.md`.
 
 **Con esta rama, el detalle de una publicación y "Seguir" necesitan la 009 aplicada.**
 
