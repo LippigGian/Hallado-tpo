@@ -118,7 +118,8 @@ export async function markAlertSeen(database, id, userId) {
 
 // Coincidencias de la alerta, las más recientes primero, marcando con `is_new` las publicadas
 // desde la última vez que se abrió. No marca la alerta como vista: la app llama a
-// POST /alerts/:id/seen al salir, así las marcas de "nueva" se mantienen al pasar de página.
+// POST /alerts/:id/seen después de mostrar la primera página y calcula `is_new` de las
+// siguientes con el `last_seen_at` que tenía la alerta al abrirla.
 export async function alertPublications(database, id, userId, page = 1) {
   const row = await findAlert(database, id, userId);
   if (!row) return null;

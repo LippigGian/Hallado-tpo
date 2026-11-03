@@ -1,7 +1,7 @@
 // Punto 3 - Buscador inicial y resultados: tarjeta de un resultado de búsqueda.
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { CATEGORIAS, FRANJAS, formatearFecha } from '../../services/search/searchCriteria';
+import { CATEGORIAS, ESTADOS, FRANJAS, formatearFecha } from '../../services/search/searchCriteria';
 
 function FotoMini({ uri }) {
   const [fallo, setFallo] = useState(false);
@@ -9,13 +9,17 @@ function FotoMini({ uri }) {
   return <Image source={{ uri }} style={styles.foto} onError={() => setFallo(true)} accessibilityLabel="Foto de la publicación" />;
 }
 
-export default function PublicationCard({ publicacion, onPress }) {
+// `novedad` (punto 9): texto destacado arriba de la tarjeta, por ejemplo "Nueva" o
+// "Cambió de estado: …". `mostrarEstado`: muestra el estado aunque sea "Abierta".
+export default function PublicationCard({ publicacion, onPress, novedad, mostrarEstado = false }) {
   const categoria = CATEGORIAS.find(c => c.id === publicacion.category)?.etiqueta || publicacion.category;
   const franja = FRANJAS.find(f => f.id === publicacion.time_slot)?.etiqueta;
   const fotos = (publicacion.fotos || []).slice(0, 3);
   const Contenedor = onPress ? TouchableOpacity : View;
+  const estado = ESTADOS.find(e => e.id === publicacion.status)?.etiqueta;
   return (
-    <Contenedor style={styles.tarjeta} accessibilityRole={onPress ? 'button' : undefined} onPress={onPress}>
+    <Contenedor style={[styles.tarjeta, !!novedad && styles.tarjetaNovedad]} accessibilityRole={onPress ? 'button' : undefined} onPress={onPress}>
+      {!!novedad && <View style={styles.novedad}><Text style={styles.novedadTexto}>{novedad}</Text></View>}
       <View style={styles.fotos}>
         {fotos.length ? fotos.map((uri, i) => <FotoMini key={i} uri={uri} />) : <FotoMini uri={null} />}
       </View>
@@ -26,7 +30,11 @@ export default function PublicationCard({ publicacion, onPress }) {
         <Text style={styles.textoSecundario}>Coordenadas aprox.: {publicacion.approx_latitude}, {publicacion.approx_longitude}</Text>
       )}
       {typeof publicacion.distance_km === 'number' && <Text style={styles.textoSecundario}>a {publicacion.distance_km} km</Text>}
-      {publicacion.status === 'claimed' && <View style={styles.insignia}><Text style={styles.insigniaTexto}>En reclamo</Text></View>}
+      {mostrarEstado && estado
+        ? <View style={[styles.insignia, publicacion.status === 'open' && styles.insigniaAbierta]}>
+          <Text style={[styles.insigniaTexto, publicacion.status === 'open' && styles.insigniaAbiertaTexto]}>{estado}</Text>
+        </View>
+        : publicacion.status === 'claimed' && <View style={styles.insignia}><Text style={styles.insigniaTexto}>En reclamo</Text></View>}
     </Contenedor>
   );
 }
@@ -42,4 +50,9 @@ const styles = StyleSheet.create({
   textoSecundario: { fontSize: 13, color: '#6B7B74' },
   insignia: { alignSelf: 'flex-start', backgroundColor: '#F4DCD6', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginTop: 8 },
   insigniaTexto: { color: '#8A3B2E', fontSize: 12, fontWeight: '700' },
+  insigniaAbierta: { backgroundColor: '#DCEAE1' },
+  insigniaAbiertaTexto: { color: '#205B46' },
+  tarjetaNovedad: { borderColor: '#205B46', borderWidth: 2 },
+  novedad: { alignSelf: 'flex-start', backgroundColor: '#205B46', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 10 },
+  novedadTexto: { color: 'white', fontSize: 12, fontWeight: '700' },
 });
