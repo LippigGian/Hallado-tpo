@@ -9,6 +9,18 @@ function validDate(value) {
   return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
 }
 
+// Palabras clave -> términos de búsqueda: sin tildes, en minúsculas, de 2 letras o más, hasta 5.
+// La usan el buscador (punto 3) y las alertas (punto 9).
+export function searchTerms(text) {
+  if (typeof text !== 'string') return [];
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().split(/\s+/).filter(t => t.length >= 2).slice(0, 5);
+}
+
+// Lo que le pasó a quien busca -> tipo de publicación que le sirve (perdí algo -> encontradas).
+export function oppositeType(situation) {
+  return situation === 'lost' ? 'found' : 'lost';
+}
+
 // Devuelve { error } o los filtros ya validados y normalizados.
 export function parseSearchQuery(query = {}) {
   for (const key of Object.keys(query)) {
@@ -17,7 +29,7 @@ export function parseSearchQuery(query = {}) {
 
   if (query.situation !== 'lost' && query.situation !== 'found') return { error: 'Indicá si perdiste o encontraste algo.' };
   // La búsqueda devuelve el tipo opuesto a lo que le pasó a quien busca.
-  const type = query.situation === 'lost' ? 'found' : 'lost';
+  const type = oppositeType(query.situation);
 
   let category = null;
   if (query.category !== undefined && query.category !== '') {
@@ -28,7 +40,7 @@ export function parseSearchQuery(query = {}) {
   let terms = [];
   if (query.q !== undefined && query.q !== '') {
     if (typeof query.q !== 'string' || query.q.length > 100) return { error: 'Las palabras clave admiten hasta 100 caracteres.' };
-    terms = query.q.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().split(/\s+/).filter(t => t.length >= 2).slice(0, 5);
+    terms = searchTerms(query.q);
   }
 
   let neighborhood = null;
@@ -105,13 +117,12 @@ export function photoUrl(publicationId, photoId) {
   return `/publications/${publicationId}/photos/${photoId}`;
 }
 
-export async function searchPublications(database, filters) {
-  const { type, category, terms, neighborhood, from, to, sort, lat, lng, page, pageSize } = filters;
-  const values = [type];
-  // Visibles: abiertas sin vencer o en reclamo.
-  const where = ['p.type=$1', "(p.status='claimed' OR (p.status='open' AND p.expires_at>now()))"];
-  const param = value => { values.push(value); return `$${values.length}`; };
-
+// Condiciones SQL de una búsqueda sobre `public.publications p`: solo publicaciones visibles
+// (abiertas sin vencer o en reclamo) que cumplen los criterios. `param(valor)` agrega el valor a
+// la lista de la consulta y devuelve su marcador ($n). La comparten el buscador (punto 3) y las
+// alertas (punto 9), así una alerta coincide exactamente con lo que mostraría la búsqueda.
+export function searchConditions({ type, category, terms = [], neighborhood, from, to }, param) {
+  const where = [`p.type=${param(type)}`, "(p.status='claimed' OR (p.status='open' AND p.expires_at>now()))"];
   if (category) where.push(`p.category=${param(category)}`);
   if (neighborhood) where.push(`lower(p.neighborhood)=lower(${param(neighborhood)})`);
   if (from) where.push(`${SQL_OCCURRED_DATE}>=${param(from)}::date`);
@@ -120,6 +131,18 @@ export async function searchPublications(database, filters) {
     const escaped = term.replace(/[\\%_]/g, match => '\\' + match);
     where.push(`translate(lower(p.title||' '||p.description),'áéíóúüñ','aeiouun') LIKE ${param(`%${escaped}%`)} ESCAPE '\\'`);
   }
+  return where;
+}
+
+// `excludeUserId`, `newSince` y sort 'created' no llegan desde la query pública: los usan las
+// alertas para no mostrar las publicaciones propias y marcar las nuevas (`is_new`).
+export async function searchPublications(database, filters) {
+  const { sort, lat, lng, page, pageSize, excludeUserId = null, newSince = null } = filters;
+  const values = [];
+  const param = value => { values.push(value); return `$${values.length}`; };
+  const where = searchConditions(filters, param);
+  if (excludeUserId) where.push(`p.user_id<>${param(excludeUserId)}`);
+  const isNewExpr = newSince ? `(p.created_at>${param(newSince)})` : 'NULL::boolean';
 
   let distanceExpr = 'NULL::double precision';
   if (lat !== null) {
@@ -128,13 +151,15 @@ export async function searchPublications(database, filters) {
     // así ninguna consulta repetida permite triangular el punto exacto. Sin coordenadas queda NULL y va al final.
     distanceExpr = `round((sqrt(power((${SQL_APPROX_LAT}-${latParam})*111.32,2)+power((${SQL_APPROX_LNG}-${lngParam})*111.32*cos(radians(${latParam})),2)))::numeric,1)::double precision`;
   }
-  const order = sort === 'nearest' ? 'distance_km ASC NULLS LAST, p.occurred_at DESC, p.id' : 'p.occurred_at DESC, p.created_at DESC, p.id';
+  const order = sort === 'nearest' ? 'distance_km ASC NULLS LAST, p.occurred_at DESC, p.id'
+    : sort === 'created' ? 'p.created_at DESC, p.id'
+      : 'p.occurred_at DESC, p.created_at DESC, p.id';
   const limitParam = param(pageSize);
   const offsetParam = param((page - 1) * pageSize);
 
   const sql = `SELECT p.id,p.type,p.title,p.category,p.neighborhood,p.occurred_at,${SQL_OCCURRED_ON} AS occurred_on,${SQL_TIME_SLOT} AS time_slot,
       ${SQL_STATUS} AS status,${SQL_APPROX_LAT} AS approx_latitude,${SQL_APPROX_LNG} AS approx_longitude,p.created_at,${distanceExpr} AS distance_km,
-      ${SQL_PHOTO_IDS} AS photo_ids,
+      ${SQL_PHOTO_IDS} AS photo_ids,${isNewExpr} AS is_new,
       count(*) OVER()::integer AS total
     FROM public.publications p WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ${limitParam} OFFSET ${offsetParam}`;
 
@@ -155,6 +180,7 @@ export async function searchPublications(database, filters) {
     distance_km: row.distance_km,
     created_at: row.created_at,
     photos: (row.photo_ids || []).map(id => ({ id, url: photoUrl(row.id, id) })),
+    ...(newSince ? { is_new: Boolean(row.is_new) } : {}),
   }));
   return { results, page, page_size: pageSize, total, has_more: page * pageSize < total };
 }

@@ -1,6 +1,7 @@
 import { profileRouter } from './profile-routes.js';
 import { publicationRouter } from './publication-routes.js';
 import { claimRouter } from './claim-routes.js';
+import { alertRouter } from './alert-routes.js';
 import { sessionRouter } from './session-routes.js';
 import { loginRouter } from './login-routes.js';
 import express from 'express';
@@ -12,6 +13,7 @@ export function createApp(database, registrationService, loginService, sessionTo
   if (sessionTokens) app.use('/profiles', express.json({ limit: '1500kb' }), profileRouter(database, sessionTokens));
   if (sessionTokens) app.use('/publications', publicationRouter(database, sessionTokens));
   if (sessionTokens) app.use('/claims', claimRouter(database, sessionTokens));
+  if (sessionTokens) app.use(alertRouter(database, sessionTokens));
   app.use(express.json({ limit: '100kb' }));
 
   // Liveness: la API está encendida, independientemente de PostgreSQL.
