@@ -1,13 +1,13 @@
 // Punto 10: historial de casos resueltos. Reglas puras (sin base de datos).
 // La app ofrece períodos predeterminados; el backend los convierte en una fecha concreta de
 // inicio, en la zona horaria de Argentina (la misma que usa el buscador).
-import { CATEGORIES } from './publication-search.js';
-import { todayInArgentina } from './alert-validation.js';
+import { CATEGORIES } from './publication-validation.js';
+import { todayInArgentina } from './dates.js';
 import { publicationPhotoPath } from './publication-view.js';
 import { serializeRating } from './feedback-rules.js';
+import { displayName } from './user-view.js';
 
 export const HISTORY_PERIODS = ['mes', '3meses', 'anio', 'todo'];
-const DEFAULT_NAME = 'Vecino de Hallado';
 
 // Resta meses a una fecha AAAA-MM-DD; si el día no existe en el mes destino (31 de marzo menos
 // un mes), usa el último día de ese mes.
@@ -61,7 +61,7 @@ export function serializeHistoryItem(row, role) {
       category: row.publication_category,
       cover_photo_url: row.cover_photo_id ? publicationPhotoPath(row.publication_id, row.cover_photo_id) : null,
     },
-    counterpart: { id: row.counterpart_id, name: row.counterpart_name || DEFAULT_NAME },
+    counterpart: { id: row.counterpart_id, name: displayName(row.counterpart_name) },
     // Valoraciones y agradecimiento (hasta FEEDBACK_DAYS días después de la devolución).
     feedback: {
       until: row.feedback_until,

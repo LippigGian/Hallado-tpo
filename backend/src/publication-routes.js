@@ -1,5 +1,5 @@
 import express, { Router } from 'express';
-import { rateLimit } from 'express-rate-limit';
+import { limiter } from './rate-limit.js';
 import { createRequireSession } from './require-session.js';
 import { sessionMiddleware } from './request-auth.js';
 import { isUuid } from './uuid.js';
@@ -14,9 +14,6 @@ import { expireClaimsMiddleware } from './claim-expiration.js';
 
 const CREATE_BODY_LIMIT = '15mb';
 
-function limiter(windowMs, limit, message) {
-  return rateLimit({ windowMs, limit, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: message } });
-}
 
 // Rutas de publicaciones de los puntos 3 (buscador), 4 (detalle y seguir) y 5 (alta, mis publicaciones, renovar).
 export function publicationRouter(database, tokens) {

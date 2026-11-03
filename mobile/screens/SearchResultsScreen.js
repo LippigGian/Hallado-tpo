@@ -14,12 +14,7 @@ import { createAlert } from '../services/alertService';
 import ConnectionRequiredButton from '../components/offline/ConnectionRequiredButton';
 import { getApiError } from '../services/api';
 import { guardarResultadosBusqueda, obtenerResultadosGuardados } from '../services/offline/offlineCache';
-
-function formatearFechaHora(ms) {
-  const d = new Date(ms);
-  const dos = n => String(n).padStart(2, '0');
-  return `${dos(d.getDate())}/${dos(d.getMonth() + 1)} ${dos(d.getHours())}:${dos(d.getMinutes())}`;
-}
+import { formatShortDateTime } from '../utils/dateTime';
 
 export default function SearchResultsScreen({ route, navigation }) {
   const { user } = useAuth();
@@ -173,7 +168,7 @@ export default function SearchResultsScreen({ route, navigation }) {
 
       {offlineInfo && !offlineInfo.vacio && (
         <Text style={styles.advertencia} accessibilityRole="alert">
-          Sin conexión. Mostramos resultados guardados el {formatearFechaHora(offlineInfo.guardadoEn)}; la información podría no estar actualizada.
+          Sin conexión. Mostramos resultados guardados el {formatShortDateTime(offlineInfo.guardadoEn)}; la información podría no estar actualizada.
           {!offlineInfo.coincide ? ' Corresponden a tu última búsqueda, no a esta.' : ''}
         </Text>
       )}

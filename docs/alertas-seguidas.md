@@ -13,6 +13,12 @@ Cualquier búsqueda se puede guardar como alerta. En "Mis alertas" se ve cuánta
 | Sección "Seguidas" con las publicaciones que la persona sigue | `FollowedPublicationsScreen` + `GET /follows`. Seguir y dejar de seguir siguen en el detalle (punto 4). |
 | Indicador visual de novedad cuando aparece una publicación que coincide con una alerta o cuando una seguida cambia de estado | Contadores en los botones "Mis alertas" y "Seguidas" del Menú (`GET /me/novelties`), "N publicaciones nuevas" en cada alerta, "Nueva" en cada coincidencia y "Cambió de estado: Abierta → En reclamo" en cada seguida. Solo dentro de la app, sin notificaciones push. |
 
+## Vocabulario
+
+- **`situation`** (en la alerta y en el buscador) es **lo que le pasó a quien busca**: `lost` = perdí algo. **`type`** (en la publicación) es lo que se publicó. Son opuestos a propósito: quien perdió algo busca publicaciones `found`, y la conversión la hace `oppositeType`.
+- **Coincidencia:** publicación que cumple los criterios de la alerta. **Nueva:** coincidencia creada después de `last_seen_at`.
+- **Seguida con novedad:** su estado actual es distinto de `last_seen_status`.
+
 ## Reglas
 
 - **Coincidencias:** exactamente las mismas que mostraría el buscador. `searchConditions` (`publication-search.js`) lo comparten el buscador y las alertas: tipo opuesto a lo que le pasó a quien busca, solo publicaciones visibles (abiertas sin vencer o en reclamo), categoría, barrio, palabras clave sin tildes y rango de fechas. Nunca cuentan las publicaciones propias.
@@ -27,6 +33,7 @@ Cualquier búsqueda se puede guardar como alerta. En "Mis alertas" se ve cuánta
 - Migración `009_alerts.sql`:
   - Tabla `search_alerts`: persona, `situation` (`lost`/`found`, igual que el buscador), `category`, `neighborhood`, `keywords`, `date_preset`, `date_from`, `date_to`, `paused`, `last_seen_at` y `created_at`. Tiene restricciones de rango y un índice único por criterios.
   - Columna `last_seen_status` en `publication_follows`. Las seguidas que ya existían se completan con su estado actual al migrar, para que no aparezcan todas con novedad.
+- Módulos compartidos: `dates.js` (`validDate`, `todayInArgentina`, zona horaria), `rate-limit.js` (`limiter`) y, de `publication-search.js`, `parsePage`, `SQL_LISTED_COLUMNS` y `serializeListedPublication` (las seguidas se listan con las mismas columnas que el buscador).
 - `src/alert-validation.js`: valida y normaliza la alerta. La fecha llega como rango concreto, no puede ser futura (según la hora de Argentina) y exige la opción elegida.
 - `src/alert-service.js`: consultas de alertas, coincidencias, seguidas y novedades. El alta bloquea a la persona (`FOR UPDATE`) para respetar el tope y usa `ON CONFLICT DO NOTHING` para los duplicados.
 - `src/alert-routes.js` (sesión obligatoria en todas):

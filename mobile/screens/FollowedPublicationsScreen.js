@@ -15,12 +15,7 @@ import { guardarLista, leerLista } from '../services/alerts/alertsCache';
 import { conFotosAbsolutas } from '../services/publicationService';
 import { textoCambioEstado } from '../services/search/searchCriteria';
 import { getApiError } from '../services/api';
-
-function formatearFechaHora(ms) {
-  const d = new Date(ms);
-  const dos = n => String(n).padStart(2, '0');
-  return `${dos(d.getDate())}/${dos(d.getMonth() + 1)} ${dos(d.getHours())}:${dos(d.getMinutes())}`;
-}
+import { formatShortDateTime } from '../utils/dateTime';
 
 export default function FollowedPublicationsScreen({ navigation }) {
   const { user } = useAuth();
@@ -76,7 +71,7 @@ export default function FollowedPublicationsScreen({ navigation }) {
       {copiaDel !== null && (
         <Text style={styles.advertencia} accessibilityRole="alert">
           {copiaDel
-            ? `Sin conexión. Mostramos la lista guardada el ${formatearFechaHora(copiaDel)}; los estados podrían no estar actualizados.`
+            ? `Sin conexión. Mostramos la lista guardada el ${formatShortDateTime(copiaDel)}; los estados podrían no estar actualizados.`
             : 'Sin conexión y sin publicaciones seguidas guardadas en este dispositivo.'}
         </Text>
       )}

@@ -1,5 +1,5 @@
 import express, { Router } from 'express';
-import { rateLimit } from 'express-rate-limit';
+import { limiter } from './rate-limit.js';
 import { createRequireSession } from './require-session.js';
 import { expireClaimsMiddleware } from './claim-expiration.js';
 import { CLAIM_RULES, claimKindFor } from './claim-rules.js';
@@ -46,10 +46,6 @@ const DECISION_FAILURES = {
   not_found: { status: 404, error: 'Reclamo no encontrado.' },
   not_pending: { status: 409, error: 'Este reclamo ya fue respondido o venció.' },
 };
-
-function limiter(windowMs, limit, message) {
-  return rateLimit({ windowMs, limit, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: message } });
-}
 
 export function claimRouter(database, tokens) {
   const router = Router();

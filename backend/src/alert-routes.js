@@ -2,29 +2,19 @@
 // (/me/novelties). Todas requieren sesión. Seguir y dejar de seguir siguen en
 // POST/DELETE /publications/:id/follow (punto 4).
 import express, { Router } from 'express';
-import { rateLimit } from 'express-rate-limit';
+import { limiter } from './rate-limit.js';
 import { createRequireSession } from './require-session.js';
 import { expireClaimsMiddleware } from './claim-expiration.js';
 import { isUuid } from './uuid.js';
+import { parsePage } from './publication-search.js';
 import { MAX_ALERTS_PER_USER, validateAlert, validateAlertUpdate } from './alert-validation.js';
 import {
   alertPublications, createAlert, deleteAlert, listAlerts, listFollows, loadNovelties, markAlertSeen, setAlertPaused,
 } from './alert-service.js';
 
-function limiter(windowMs, limit, message) {
-  return rateLimit({ windowMs, limit, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: message } });
-}
-
 function validId(req, res, next) {
   if (!isUuid(req.params.id)) return res.status(400).json({ error: 'Identificador inválido.' });
   next();
-}
-
-function parsePage(value) {
-  if (value === undefined || value === '') return 1;
-  if (typeof value !== 'string' || !/^\d+$/.test(value)) return null;
-  const page = Number(value);
-  return page >= 1 && page <= 500 ? page : null;
 }
 
 export function alertRouter(database, tokens) {

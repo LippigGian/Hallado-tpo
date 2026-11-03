@@ -1,10 +1,11 @@
 // Punto 10: historial de casos resueltos de una persona, separado en "Devolví" y "Recuperé".
 // Cada caso trae el estado de sus valoraciones y del agradecimiento (reputation_events con
 // source_id = returns.id).
-import { FEEDBACK_DAYS } from './return-rules.js';
+import { FEEDBACK_DAYS } from './feedback-rules.js';
+import { SQL_ZONE_AR } from './dates.js';
+import { SQL_COVER_PHOTO_ID } from './publication-search.js';
 
 const LIST_LIMIT = 100;
-const ZONA = "'America/Argentina/Buenos_Aires'";
 const FEEDBACK_END = `r.returned_at + ${FEEDBACK_DAYS} * interval '1 day'`;
 
 function ratingFor(userColumn) {
@@ -20,7 +21,7 @@ function historyQuery(role) {
   return `
     SELECT r.id, r.claim_id, r.returned_at, r.publication_id,
            p.type AS publication_type, p.title AS publication_title, p.category AS publication_category,
-           (SELECT ph.id FROM public.publication_photos ph WHERE ph.publication_id = p.id ORDER BY ph.sort_order LIMIT 1) AS cover_photo_id,
+           ${SQL_COVER_PHOTO_ID} AS cover_photo_id,
            u.id AS counterpart_id, u.name AS counterpart_name,
            ${FEEDBACK_END} AS feedback_until,
            now() < ${FEEDBACK_END} AS feedback_open,
@@ -33,7 +34,7 @@ function historyQuery(role) {
       JOIN public.publications p ON p.id = r.publication_id
       JOIN public.users u ON u.id = ${other}
      WHERE ${mine} = $1
-       AND ($2::date IS NULL OR (r.returned_at AT TIME ZONE ${ZONA})::date >= $2::date)
+       AND ($2::date IS NULL OR (r.returned_at AT TIME ZONE ${SQL_ZONE_AR})::date >= $2::date)
        AND ($3::text IS NULL OR p.category = $3)
      ORDER BY r.returned_at DESC
      LIMIT ${LIST_LIMIT}`;

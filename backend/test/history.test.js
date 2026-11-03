@@ -170,12 +170,12 @@ test('GET /history: sin filtros trae todo; errores de sesión y de parámetros',
   assert.deepEqual(last.values, [userId, null, null]);
 });
 
-test('POST /history/:id/rating: cada parte valora a la otra una sola vez', async () => {
+test('POST /returns/:id/rating: cada parte valora a la otra una sola vez', async () => {
   const database = makeDatabase();
   await withServer(database, async request => {
-    const url = `/history/${returnId}/rating`;
+    const url = `/returns/${returnId}/rating`;
     assert.equal((await request(url, undefined, { value: 'positive' })).status, 401);
-    assert.equal((await request('/history/no-es-uuid/rating', otherId, { value: 'positive' })).status, 400);
+    assert.equal((await request('/returns/no-es-uuid/rating', otherId, { value: 'positive' })).status, 400);
     assert.equal((await request(url, otherId, { value: 'genial' })).status, 400);
     assert.equal((await request(url, strangerId, { value: 'positive' })).status, 404);
     assert.equal((await request(url, otherId, { value: 'positive', message: 'Muy amable' })).status, 201);
@@ -189,10 +189,10 @@ test('POST /history/:id/rating: cada parte valora a la otra una sola vez', async
   assert.deepEqual(ratings.at(-1), [otherId, 'rating', returnId, userId, -1, 'Llegó tarde']);
 });
 
-test('POST /history/:id/thanks: solo quien recuperó, una vez y con mensaje', async () => {
+test('POST /returns/:id/thanks: solo quien recuperó, una vez y con mensaje', async () => {
   const database = makeDatabase();
   await withServer(database, async request => {
-    const url = `/history/${returnId}/thanks`;
+    const url = `/returns/${returnId}/thanks`;
     assert.equal((await request(url, otherId, { message: '  ' })).status, 400);
     const holder = await request(url, userId, { message: 'Gracias' });
     assert.deepEqual([holder.status, holder.body.error], [403, 'El agradecimiento lo deja quien recuperó el objeto.']);
@@ -203,12 +203,12 @@ test('POST /history/:id/thanks: solo quien recuperó, una vez y con mensaje', as
   assert.deepEqual(thanks.values, [userId, 'thanks', returnId, otherId, 1, '¡Gracias por devolverme el DNI!']);
 });
 
-test('POST /history/:id/rating y /thanks: vencido el plazo de 7 días', async () => {
+test('POST /returns/:id/rating y /thanks: vencido el plazo de 7 días', async () => {
   const database = makeDatabase({ feedbackOpen: false });
   await withServer(database, async request => {
-    const rating = await request(`/history/${returnId}/rating`, otherId, { value: 'positive' });
+    const rating = await request(`/returns/${returnId}/rating`, otherId, { value: 'positive' });
     assert.deepEqual([rating.status, rating.body.error], [409, 'Pasaron más de 7 días desde la devolución.']);
-    assert.equal((await request(`/history/${returnId}/thanks`, otherId, { message: 'Gracias' })).status, 409);
+    assert.equal((await request(`/returns/${returnId}/thanks`, otherId, { message: 'Gracias' })).status, 409);
   });
   assert.equal(database.calls.some(call => /INSERT INTO public\.reputation_events/.test(call.sql)), false);
 });

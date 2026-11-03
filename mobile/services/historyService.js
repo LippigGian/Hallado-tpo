@@ -1,7 +1,8 @@
 // Punto 10: historial de casos resueltos, valoraciones y agradecimientos.
 import { api } from './api';
 
-const casePath = id => `/history/${encodeURIComponent(id)}`;
+// Valoraciones y agradecimientos van sobre la devolución: el `id` de cada caso del historial.
+const returnPath = id => `/returns/${encodeURIComponent(id)}`;
 
 /** period: 'mes' | '3meses' | 'anio' | 'todo'. category: categoría o null (todas). */
 export async function getHistory({ period, category }) {
@@ -12,10 +13,10 @@ export async function getHistory({ period, category }) {
 
 /** datos: { value: 'positive' | 'negative', message? } */
 export async function rateCase(id, datos) {
-  await api.post(`${casePath(id)}/rating`, datos);
+  await api.post(`${returnPath(id)}/rating`, datos);
 }
 
 /** datos: { message } */
 export async function thankCase(id, datos) {
-  await api.post(`${casePath(id)}/thanks`, datos);
+  await api.post(`${returnPath(id)}/thanks`, datos);
 }

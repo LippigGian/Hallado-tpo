@@ -13,12 +13,7 @@ import { guardarPublicacionVista, obtenerPublicacionGuardada } from '../services
 import {
   accionesDisponibles, etiquetaCategoria, etiquetaEstado, etiquetaTipo, textoCoordenadas, textoFechaSuceso, ubicacionExactaVisible,
 } from '../services/publications/publicationView';
-
-function formatearFechaHora(ms) {
-  const d = new Date(ms);
-  const dos = n => String(n).padStart(2, '0');
-  return `${dos(d.getDate())}/${dos(d.getMonth() + 1)} ${dos(d.getHours())}:${dos(d.getMinutes())}`;
-}
+import { formatShortDateTime } from '../utils/dateTime';
 
 export default function PublicationDetailScreen({ route, navigation }) {
   const { publicationId } = route.params;
@@ -105,7 +100,7 @@ export default function PublicationDetailScreen({ route, navigation }) {
 
       {offlineInfo && !offlineInfo.vacio && (
         <Text style={styles.advertencia} accessibilityRole="alert">
-          Sin conexión. Mostramos la versión guardada el {formatearFechaHora(offlineInfo.guardadoEn)}; podría no estar actualizada.
+          Sin conexión. Mostramos la versión guardada el {formatShortDateTime(offlineInfo.guardadoEn)}; podría no estar actualizada.
         </Text>
       )}
 

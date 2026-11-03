@@ -1,12 +1,10 @@
 // Punto 10: un caso resuelto del historial, con su estado de valoraciones y agradecimiento.
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../config/theme';
-import { CATEGORIES } from '../../config/publicationOptions';
-import { apiUrl } from '../../services/api';
+import { etiquetaCategoria } from '../../services/publications/publicationView';
 import { textoCaso, textoPlazo, textoValoracion } from '../../services/history/historyView';
 import ConnectionRequiredButton from '../offline/ConnectionRequiredButton';
-
-const categoria = value => CATEGORIES.find(item => item.value === value)?.label ?? value;
+import CoverThumbnail from '../CoverThumbnail';
 
 function Linea({ label, value }) {
   if (!value) return null;
@@ -14,17 +12,14 @@ function Linea({ label, value }) {
 }
 
 export default function HistoryCard({ caso, pestania, onOpenProfile, onRate, onThank }) {
-  const cover = apiUrl(caso.publication.cover_photo_url);
   const fb = caso.feedback;
   const plazo = textoPlazo(caso);
   return (
     <View style={styles.card}>
       <View style={styles.row}>
-        {cover
-          ? <Image source={{ uri: cover }} style={styles.cover} accessibilityLabel={`Foto de ${caso.publication.title}`} />
-          : <View style={[styles.cover, styles.noCover]} />}
+        <CoverThumbnail path={caso.publication.cover_photo_url} title={caso.publication.title} />
         <View style={styles.info}>
-          <Text style={styles.kind}>{categoria(caso.publication.category)}</Text>
+          <Text style={styles.kind}>{etiquetaCategoria(caso.publication.category)}</Text>
           <Text style={styles.title} numberOfLines={2}>{caso.publication.title}</Text>
           <Text style={styles.text}>{textoCaso(caso, pestania)}</Text>
           <TouchableOpacity accessibilityRole="link" onPress={onOpenProfile}>
@@ -54,8 +49,6 @@ export default function HistoryCard({ caso, pestania, onOpenProfile, onRate, onT
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: colors.primarySoft },
   row: { flexDirection: 'row', gap: 12 },
-  cover: { width: 84, height: 84, borderRadius: 10, backgroundColor: colors.primarySoft },
-  noCover: { opacity: 0.6 },
   info: { flex: 1 },
   kind: { fontSize: 13, fontWeight: '700', color: colors.primary, textTransform: 'uppercase', marginBottom: 2 },
   title: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 4 },

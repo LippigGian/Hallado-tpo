@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { createApp } from '../src/app.js';
 import { createSessionTokens } from '../src/session-tokens.js';
-import { todayInArgentina, validateAlert, validateAlertUpdate } from '../src/alert-validation.js';
+import { validateAlert, validateAlertUpdate } from '../src/alert-validation.js';
+import { todayInArgentina } from '../src/dates.js';
 import { alertFilters } from '../src/alert-service.js';
 
 const secret = 'alerts-unit-test-secret-1234567890';

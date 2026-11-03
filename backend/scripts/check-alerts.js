@@ -12,7 +12,7 @@ import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 import { createApp } from '../src/app.js';
 import { createSessionTokens } from '../src/session-tokens.js';
-import { todayInArgentina } from '../src/alert-validation.js';
+import { todayInArgentina } from '../src/dates.js';
 
 if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) throw new Error('Falta DATABASE_URL o JWT_SECRET.');
 

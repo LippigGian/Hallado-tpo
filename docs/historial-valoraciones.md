@@ -10,9 +10,22 @@ Cuando quien recupera el objeto confirma la devolución, el caso queda resuelto 
 | --- | --- |
 | Historial de casos resueltos, separado en "Devolví" y "Recuperé", con fecha, objeto y contraparte | `GET /history` → `{ returned, recovered }`. `HistoryScreen` con dos pestañas; cada caso (`HistoryCard`) muestra la foto, la categoría, el objeto, "Devolviste a Ana el 01/11/2026" o "Ana te lo devolvió el 01/11/2026" y el enlace al perfil de la contraparte. |
 | Filtros por rango de fechas y por tipo | Período con opciones predeterminadas ("Último mes", "Últimos 3 meses", "Este año", "Todo"), que el backend convierte en una fecha concreta. "Tipo" se interpretó como la **categoría** del objeto. |
-| Dentro de los 7 días de la devolución, cada parte puede valorar a la otra (positiva o negativa) con un mensaje corto opcional | `POST /history/:id/rating` + `HistoryFeedbackScreen`. Una valoración por parte y por caso, sin edición, con un mensaje de hasta 200 caracteres. |
-| Quien recuperó puede dejar un agradecimiento público, visible en el perfil de quien devolvió | `POST /history/:id/thanks`. Se muestra en el perfil público, que ya listaba los agradecimientos (punto 2). |
+| Dentro de los 7 días de la devolución, cada parte puede valorar a la otra (positiva o negativa) con un mensaje corto opcional | `POST /returns/:id/rating` + `HistoryFeedbackScreen`. Una valoración por parte y por caso, sin edición, con un mensaje de hasta 200 caracteres. |
+| Quien recuperó puede dejar un agradecimiento público, visible en el perfil de quien devolvió | `POST /returns/:id/thanks`. Se muestra en el perfil público, que ya listaba los agradecimientos (punto 2). |
 | Las valoraciones recibidas alimentan la reputación | Se guardan como `reputation_events` (`rating`, `thanks`), igual que la devolución (`return`). El puntaje del perfil las suma solo. |
+
+## Vocabulario
+
+Para no mezclar nombres, el punto 10 usa siempre estos términos:
+
+| Término | Significa | En la API |
+| --- | --- | --- |
+| Caso / devolución | Una devolución confirmada; fila de `returns` | Su `id` es el `:id` de `/returns/:id/rating` y `/returns/:id/thanks`, y el `id` de cada caso del historial |
+| Quien devuelve | Quien tenía el objeto (regla del punto 8) | `returner`; `returner_id` en la tabla |
+| Quien recupera | La otra parte: recibe el objeto y confirma | `recoverer`; `recoverer_id` en la tabla |
+| Pestaña "Devolví" / "Recuperé" | Casos donde fuiste quien devuelve / quien recupera | `returned` / `recovered` en `GET /history` |
+
+`claim.return.role` usa los mismos valores (`returner` o `recoverer`). El rol del reclamo (`publisher`/`claimant`, punto 7) y el del punto de encuentro (`tiene_objeto`/`otra_parte`, punto 8) no se cambiaron, porque ya los usa la app.
 
 ## Reglas
 
@@ -48,16 +61,18 @@ Cuando quien recupera el objeto confirma la devolución, el caso queda resuelto 
 - `src/return-service.js`: `confirmReturn`. Bloquea el reclamo y la publicación (`FOR UPDATE`), así que dos confirmaciones simultáneas no crean dos casos.
 - `src/history-rules.js`: `parseHistoryQuery` (período y categoría), `periodStart` y `serializeHistoryItem`.
 - `src/history-service.js`: una consulta por pestaña. Incluye la contraparte, la foto de portada, el plazo y las valoraciones y el agradecimiento del caso.
-- `src/feedback-rules.js` y `src/feedback-service.js`: validación, permisos, plazo y alta del evento de reputación.
+- `src/feedback-rules.js` y `src/feedback-service.js`: validación, permisos, plazo (`FEEDBACK_DAYS`, definido acá) y alta del evento de reputación.
+- `src/history-routes.js`: se monta en la raíz con `GET /history` y `POST /returns/:id/rating|thanks`.
+- Módulos compartidos que usa: `dates.js` (zona horaria de Argentina y "hoy"), `user-view.js` ("Vecino de Hallado" como nombre por defecto), `rate-limit.js` y `SQL_COVER_PHOTO_ID` de `publication-search.js`.
 - Endpoints (todos con sesión):
   - `POST /claims/:id/return` → `{ claim }`. Errores: 400 si el id no es válido, 404 si no participás, 403 si sos quien devuelve, 409 si el reclamo no está aceptado o la devolución ya se confirmó.
-  - Todo reclamo (`GET /claims/:id`, `GET /claims/mine`) incluye `return: { returned, returned_at, role: 'devuelve'|'recupera', can_confirm }`.
+  - Todo reclamo (`GET /claims/:id`, `GET /claims/mine`) incluye `return: { returned, returned_at, role: 'returner'|'recoverer', can_confirm }`.
   - `GET /history?period=mes|3meses|anio|todo&category=` → `{ filters: { period, date_from, category }, returned: [...], recovered: [...] }`.
     - Cada caso trae `{ id, claim_id, returned_at, publication: { id, type, title, category, cover_photo_url }, counterpart: { id, name }, feedback }`.
     - `feedback` es `{ until, open, given_rating, received_rating, thanks, can_rate, can_thank }`.
     - Como máximo 100 casos por pestaña, los más recientes primero.
-  - `POST /history/:id/rating` con `{ value: 'positive'|'negative', message? }` → 201. Errores: 400, 404, 409 si ya valoraste o pasaron 7 días.
-  - `POST /history/:id/thanks` con `{ message }` → 201. Errores: 400, 403 si no sos quien recuperó, 404, 409 si ya agradeciste o pasaron 7 días.
+  - `POST /returns/:id/rating` con `{ value: 'positive'|'negative', message? }` → 201. Errores: 400, 404, 409 si ya valoraste o pasaron 7 días.
+  - `POST /returns/:id/thanks` con `{ message }` → 201. Errores: 400, 403 si no sos quien recuperó, 404, 409 si ya agradeciste o pasaron 7 días.
 - Pruebas:
   - `npm test` corre `test/returns.test.js` y `test/history.test.js` con mocks.
   - `npm run test:returns` corre contra PostgreSQL dentro de una transacción que se deshace. Con `-- --with-migration` aplica la 010 solo dentro de esa transacción.
