@@ -32,6 +32,7 @@ Además, `OfflineBanner` muestra en toda la app un aviso "Sin conexión" y la ca
 | Publicar (`PublishPublicationScreen`) | El botón pasa a "Guardar para publicar después": la publicación queda `pendiente_envio` (con copia de las fotos) y se publica sola al reconectar con `createPublication`, el mismo alta del punto 5. |
 | Mis publicaciones (`MyPublicationsScreen`) | Lista "Pendientes de envío". Si el servidor rechaza una, muestra el motivo con "Reintentar" y "Descartar". Al enviarse, la lista se recarga. |
 | Reclamos y punto de encuentro | Aceptar, rechazar, proponer y aceptar un punto usan `ConnectionRequiredButton`. |
+| Mis alertas y Seguidas (`MyAlertsScreen`, `FollowedPublicationsScreen`, punto 9) | Muestran la última lista cargada con su fecha (`services/alerts/alertsCache.js`). Pausar, eliminar y ver las coincidencias quedan deshabilitados. "Guardar búsqueda como alerta" usa `ConnectionRequiredButton`. |
 
 `ConnectivityProvider` registra `createPublication` como enviador de la cola. Si el servidor rechaza una publicación pendiente (4xx), queda `error_envio` con el mensaje; si el error es de red, se reintenta en la próxima reconexión. Un timeout no se encola, porque el servidor pudo haberla guardado.
 

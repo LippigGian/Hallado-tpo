@@ -1,8 +1,8 @@
-// Punto 3 - Buscador inicial y resultados: últimas búsquedas y alertas guardadas en el
-// dispositivo (ver docs/buscador-resultados.md, sección "Integración con las partes del
-// grupo" para cómo el punto 9 puede migrar estas alertas a un backend real).
+// Punto 3 - Buscador inicial y resultados: últimas búsquedas guardadas en el dispositivo.
+// Antes del punto 9 también guardaba acá las alertas (flag `guardada`); ahora las alertas viven
+// en el backend y services/alerts/localAlertsMigration.js sube y quita las que quedaron acá.
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { agregarReciente, marcarComoAlerta, quitarAlerta as quitarAlertaDeLista } from './searchCriteria';
+import { agregarReciente, quitarAlerta as quitarAlertaDeLista } from './searchCriteria';
 
 function clave(userId) {
   return `hallado.busquedas.${userId}`;
@@ -29,13 +29,6 @@ export async function listarBusquedas(userId) {
 export async function registrarBusqueda(userId, criterios) {
   if (!userId) return [];
   const lista = agregarReciente(await leer(userId), criterios);
-  await escribir(userId, lista);
-  return lista;
-}
-
-export async function guardarComoAlerta(userId, criterios) {
-  if (!userId) return [];
-  const lista = marcarComoAlerta(await leer(userId), criterios);
   await escribir(userId, lista);
   return lista;
 }

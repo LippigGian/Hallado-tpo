@@ -9,6 +9,9 @@ import CreateClaimScreen from '../screens/CreateClaimScreen';
 import MyClaimsScreen from '../screens/MyClaimsScreen';
 import ClaimDetailScreen from '../screens/ClaimDetailScreen';
 import ClaimDemoScreen from '../screens/ClaimDemoScreen';
+import MyAlertsScreen from '../screens/MyAlertsScreen';
+import AlertResultsScreen from '../screens/AlertResultsScreen';
+import FollowedPublicationsScreen from '../screens/FollowedPublicationsScreen';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import HomeScreen from '../screens/HomeScreen';
@@ -54,6 +57,9 @@ export default function AppNavigator() {
         <Stack.Screen name="MyClaims" component={MyClaimsScreen} options={{ title: 'Mis reclamos' }} />
         <Stack.Screen name="ClaimDetail" component={ClaimDetailScreen} options={{ title: 'Detalle del reclamo' }} />
         <Stack.Screen name="ClaimDemo" component={ClaimDemoScreen} options={{ title: 'Reclamar (prueba)' }} />
+        <Stack.Screen name="MyAlerts" component={MyAlertsScreen} options={{ title: 'Mis alertas' }} />
+        <Stack.Screen name="AlertResults" component={AlertResultsScreen} options={{ title: 'Coincidencias' }} />
+        <Stack.Screen name="FollowedPublications" component={FollowedPublicationsScreen} options={{ title: 'Seguidas' }} />
       </> : <>
       <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Hallado' }} />
       <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Crear cuenta' }} />

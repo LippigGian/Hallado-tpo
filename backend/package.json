@@ -20,7 +20,8 @@
     "test:publications": "node --env-file-if-exists=.env scripts/check-publications.js",
     "test:search": "node --env-file-if-exists=.env scripts/check-search.js",
     "test:claims": "node --env-file-if-exists=.env scripts/check-claims.js",
-    "test:meeting-point": "node --env-file-if-exists=.env scripts/check-meeting-point.js"
+    "test:meeting-point": "node --env-file-if-exists=.env scripts/check-meeting-point.js",
+    "test:alerts": "node --env-file-if-exists=.env scripts/check-alerts.js"
   },
   "dependencies": {
     "express": "^5.3.0",

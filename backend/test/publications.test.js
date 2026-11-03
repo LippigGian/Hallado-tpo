@@ -95,7 +95,8 @@ test('los filtros agregan condiciones SQL y la paginación arma LIMIT/OFFSET', a
   await searchPublications(database, filters);
   const { sql, values } = database.calls.at(-1);
   assert.match(sql, /p\.category=\$2/);
-  assert.match(sql, /lower\(p\.neighborhood\)=lower\(\$3\)/);
+  // Sin tildes ni espacios: el barrio del buscador sale de una lista y el de la publicación se escribe a mano.
+  assert.match(sql, /translate\(lower\(btrim\(p\.neighborhood\)\),'áéíóúüñ','aeiouun'\)=translate\(lower\(btrim\(\$3\)\),'áéíóúüñ','aeiouun'\)/);
   assert.match(sql, /\(p\.occurred_at AT TIME ZONE 'America\/Argentina\/Buenos_Aires'\)::date>=\$4::date/);
   assert.match(sql, /\(p\.occurred_at AT TIME ZONE 'America\/Argentina\/Buenos_Aires'\)::date<=\$5::date/);
   assert.match(sql, /LIMIT \$6 OFFSET \$7/);

@@ -176,3 +176,74 @@ export function recientes(lista = []) {
 export function alertas(lista = []) {
   return lista.filter(item => item.guardada).sort((a, b) => (b.guardadaEn ?? 0) - (a.guardadaEn ?? 0));
 }
+
+// Punto 9 - Alertas guardadas en el backend (ver docs/alertas-seguidas.md).
+// La persona elige "Hoy", "Últimos 3 días", etc., pero la alerta se guarda con fechas
+// concretas: el rango se calcula al guardar y ya no se corre con el paso de los días.
+export const PRESETS_ALERTA = { hoy: 'Hoy', '3dias': 'Últimos 3 días', semana: 'Última semana', rango: 'Fechas elegidas' };
+
+// Criterios del buscador -> cuerpo de POST /alerts. `ahora` es el momento en que se guardó.
+export function criteriosAAlerta(criterios = {}, ahora = new Date()) {
+  const { from, to } = rangoDeFechas(criterios, ahora);
+  const conFecha = Boolean(from && to);
+  return {
+    situation: criterios.queTePaso === 'perdi' ? 'lost' : criterios.queTePaso === 'encontre' ? 'found' : null,
+    category: criterios.categoria || null,
+    // Igual que criteriosAParams: "Todos los barrios" no filtra por barrio.
+    neighborhood: criterios.origenUbicacion === 'todos' ? null : (criterios.barrio || null),
+    keywords: (criterios.palabras || '').trim() || null,
+    date_preset: conFecha ? criterios.cuando : null,
+    date_from: conFecha ? from : null,
+    date_to: conFecha ? to : null,
+  };
+}
+
+// 'AAAA-MM-DD' -> 'DD/MM' o 'DD/MM/AAAA'.
+function fechaCorta(iso, conAnio) {
+  const [anio, mes, dia] = String(iso).split('-');
+  return conAnio ? `${dia}/${mes}/${anio}` : `${dia}/${mes}`;
+}
+
+// "Últimos 3 días (31/10 – 02/11)": la opción elegida y las fechas fijas que usa la alerta.
+// El año se muestra solo si alguna de las fechas no es del año actual.
+export function describirFechaAlerta(alerta = {}, ahora = new Date()) {
+  if (!alerta.date_from || !alerta.date_to) return 'Cualquier fecha';
+  const anioActual = String(ahora.getFullYear());
+  const conAnio = !alerta.date_from.startsWith(anioActual) || !alerta.date_to.startsWith(anioActual);
+  const rango = alerta.date_from === alerta.date_to
+    ? fechaCorta(alerta.date_from, conAnio)
+    : `${fechaCorta(alerta.date_from, conAnio)} – ${fechaCorta(alerta.date_to, conAnio)}`;
+  return `${PRESETS_ALERTA[alerta.date_preset] || 'Fechas'} (${rango})`;
+}
+
+export function describirAlerta(alerta = {}) {
+  const partes = [alerta.situation === 'lost' ? 'Perdí' : 'Encontré'];
+  const categoria = CATEGORIAS.find(c => c.id === alerta.category);
+  if (categoria) partes.push(categoria.etiqueta);
+  if (alerta.keywords) partes.push(`"${alerta.keywords}"`);
+  partes.push(alerta.neighborhood || 'Todos los barrios');
+  return partes.join(' · ');
+}
+
+export function textoNovedadAlerta(alerta = {}) {
+  if (alerta.paused) return 'Pausada';
+  if (alerta.new_count > 0) return `${alerta.new_count} publicaci${alerta.new_count === 1 ? 'ón nueva' : 'ones nuevas'}`;
+  return 'Sin publicaciones nuevas';
+}
+
+export function etiquetaEstadoPublicacion(estado) {
+  return ESTADOS.find(e => e.id === estado)?.etiqueta || estado;
+}
+
+// Seguidas: "Cambió de estado: Abierta → En reclamo".
+export function textoCambioEstado(seguida = {}) {
+  if (!seguida.has_update) return '';
+  const antes = seguida.previous_status ? `${etiquetaEstadoPublicacion(seguida.previous_status)} → ` : '';
+  return `Cambió de estado: ${antes}${etiquetaEstadoPublicacion(seguida.status)}`;
+}
+
+// Contador de los botones del Menú: vacío si no hay novedades, "99+" si son muchas.
+export function textoContador(cantidad) {
+  if (!cantidad || cantidad < 0) return '';
+  return cantidad > 99 ? '99+' : String(cantidad);
+}

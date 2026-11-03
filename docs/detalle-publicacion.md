@@ -39,8 +39,11 @@ Agrega la migración `007_publication_follows.sql`.
   tiene un reclamo aceptado. El detalle incluye `verification_question` e `is_owner`, que usa
   el formulario de reclamo.
 - **Punto 5 (Publicar)**: `ManagePublication` abre "Mis publicaciones".
-- **Punto 9 (Alertas y publicaciones seguidas)**: `publication_follows` (migración 007) ya
-  guarda quién sigue qué; falta la pantalla "Seguidas" y el indicador de novedades.
+- **Punto 9 (Alertas y publicaciones seguidas)**: ya integrado (ver `alertas-seguidas.md`).
+  La pantalla "Seguidas" lista lo que guarda `publication_follows`. La migración 009 agrega
+  `last_seen_status`: "Seguir" guarda el estado actual y abrir este detalle marca la
+  publicación seguida como vista, lo que quita el aviso "Cambió de estado". Por eso, desde
+  esta rama el detalle necesita la 009 aplicada.
 - **Punto 8 (Punto de encuentro)**: el botón "Cómo llegar" no está en este detalle: depende
   de un reclamo aceptado, que todavía no existe.
 

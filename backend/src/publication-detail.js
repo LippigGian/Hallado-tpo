@@ -1,4 +1,5 @@
 import { readReputation } from './reputation.js';
+import { markFollowSeen } from './alert-service.js';
 import { canSeeExactLocation } from './publication-access.js';
 import {
   photoUrl, SQL_APPROX_LAT, SQL_APPROX_LNG, SQL_OCCURRED_ON, SQL_PHOTO_IDS, SQL_STATUS, SQL_TIME_SLOT,
@@ -24,8 +25,10 @@ export async function loadPublicationDetail(database, id, viewerId) {
 
   let isFollowing = false;
   if (viewerId) {
-    const follow = await database.query('SELECT 1 FROM public.publication_follows WHERE publication_id=$1 AND user_id=$2', [id, viewerId]);
+    const follow = await database.query('SELECT last_seen_status FROM public.publication_follows WHERE publication_id=$1 AND user_id=$2', [id, viewerId]);
     isFollowing = Boolean(follow.rowCount);
+    // Punto 9: abrir el detalle de una seguida marca su estado actual como visto.
+    if (isFollowing && follow.rows[0].last_seen_status !== row.status) await markFollowSeen(database, id, viewerId, row.status);
   }
 
   const canSeeExact = await canSeeExactLocation(database, row, viewerId);
@@ -89,7 +92,12 @@ export async function followPublication(database, publicationId, userId) {
   if (!pub.rowCount) return { status: 404, body: { error: 'Publicación no encontrada.' } };
   if (pub.rows[0].user_id === userId) return { status: 400, body: { error: 'No hace falta seguir tu propia publicación.' } };
   if (pub.rows[0].status === 'resolved') return { status: 409, body: { error: 'La publicación ya está resuelta.' } };
-  await database.query('INSERT INTO public.publication_follows(publication_id,user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [publicationId, userId]);
+  // Punto 9: se empieza a seguir con el estado actual como visto (sin novedad).
+  await database.query(
+    `INSERT INTO public.publication_follows(publication_id,user_id,last_seen_status)
+     SELECT p.id,$2,${SQL_STATUS} FROM public.publications p WHERE p.id=$1 ON CONFLICT DO NOTHING`,
+    [publicationId, userId],
+  );
   return { status: 200, body: { following: true, followers_count: await followersCount(database, publicationId) } };
 }
 

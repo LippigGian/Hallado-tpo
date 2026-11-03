@@ -42,7 +42,7 @@ function publicationRow(overrides = {}) {
   };
 }
 
-function makeDatabase({ row = publicationRow(), following = false, repEvents = { completed_returns: 6, positive_ratings: 0, negative_ratings: 0 }, follow = {}, acceptedClaim = false } = {}) {
+function makeDatabase({ row = publicationRow(), following = false, lastSeenStatus = 'open', repEvents = { completed_returns: 6, positive_ratings: 0, negative_ratings: 0 }, follow = {}, acceptedClaim = false } = {}) {
   const calls = [];
   const database = {
     calls,
@@ -63,7 +63,11 @@ function makeDatabase({ row = publicationRow(), following = false, repEvents = {
         return { rowCount: 1, rows: [row] };
       }
       if (/FROM public\.publication_follows WHERE publication_id=\$1 AND user_id=\$2/.test(sql)) {
-        return { rowCount: following ? 1 : 0, rows: following ? [{}] : [] };
+        return { rowCount: following ? 1 : 0, rows: following ? [{ last_seen_status: lastSeenStatus }] : [] };
+      }
+      // Punto 9: abrir el detalle de una seguida marca su estado como visto.
+      if (/UPDATE public\.publication_follows SET last_seen_status=\$3/.test(sql)) {
+        return { rowCount: 1, rows: [] };
       }
       if (/count\(\*\) FILTER \(WHERE event_type='return'\)/.test(sql)) {
         return { rowCount: 1, rows: [repEvents] };
@@ -240,4 +244,37 @@ test('con reclamo aceptado se ve la dirección exacta, nunca la respuesta de ver
     assert.equal('verification_answer' in publication, false);
     assert.equal(publication.is_owner, false);
   });
+});
+
+// 10. Punto 9: abrir el detalle de una publicación seguida marca su estado actual como visto.
+test('abrir el detalle de una seguida con cambio de estado lo marca como visto', async () => {
+  const markSeen = calls => calls.filter(call => /UPDATE public\.publication_follows SET last_seen_status/.test(call.sql));
+
+  const changed = makeDatabase({ row: publicationRow({ status: 'claimed' }), following: true, lastSeenStatus: 'open' });
+  await withServer(changed, async (base, tokens) => {
+    const response = await fetch(`${base}/publications/${publicationRow().id}`, { headers: { Authorization: `Bearer ${tokens.sign(viewerId, 0)}` } });
+    assert.equal(response.status, 200);
+  });
+  assert.deepEqual(markSeen(changed.calls).map(call => call.values), [[publicationRow().id, viewerId, 'claimed']]);
+
+  // Sin cambios, o sin seguirla, no escribe nada.
+  const same = makeDatabase({ following: true, lastSeenStatus: 'open' });
+  const notFollowing = makeDatabase({ following: false });
+  for (const database of [same, notFollowing]) {
+    await withServer(database, async (base, tokens) => {
+      await fetch(`${base}/publications/${publicationRow().id}`, { headers: { Authorization: `Bearer ${tokens.sign(viewerId, 0)}` } });
+    });
+    assert.equal(markSeen(database.calls).length, 0);
+  }
+});
+
+test('seguir guarda el estado actual como visto', async () => {
+  const database = makeDatabase();
+  await withServer(database, async (base, tokens) => {
+    await fetch(`${base}/publications/${publicationRow().id}/follow`, { method: 'POST', headers: { Authorization: `Bearer ${tokens.sign(viewerId, 0)}` } });
+  });
+  const insert = database.calls.find(call => /INSERT INTO public\.publication_follows/.test(call.sql));
+  assert.match(insert.sql, /last_seen_status/);
+  assert.match(insert.sql, /expires_at <= now\(\) THEN 'expired'/);
+  assert.deepEqual(insert.values, [publicationRow().id, viewerId]);
 });

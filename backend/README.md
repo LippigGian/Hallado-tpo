@@ -100,3 +100,16 @@ Punto 7: reclamos "Es mío" y "Lo encontré", aceptar o rechazar, máximo 3 inte
 ## Punto de encuentro
 
 Punto 8: una vez aceptado un reclamo, quien tiene el objeto propone dónde y cuándo devolverlo y la otra parte acepta o sugiere otro punto. Migración `008_meeting_points.sql`; endpoints y pruebas en `../docs/punto-encuentro.md`. Verificar con `npm test` y, con la migración aplicada, `npm run test:meeting-point`.
+
+## Alertas y publicaciones seguidas
+
+Punto 9: guardar búsquedas como alertas (con fechas concretas), pausarlas o eliminarlas, contar las publicaciones nuevas que coinciden con cada una, listar las publicaciones seguidas y detectar cuándo cambian de estado. Migración `009_alerts.sql` (tabla `search_alerts` y columna `last_seen_status` en `publication_follows`). Reglas, endpoints y cómo probar en `../docs/alertas-seguidas.md`.
+
+**Con esta rama, el detalle de una publicación y "Seguir" necesitan la 009 aplicada.**
+
+- `GET/POST /alerts`, `PATCH /alerts/:id` (`{ "paused": true|false }`), `DELETE /alerts/:id`.
+- `GET /alerts/:id/publications?page=` (coincidencias con `is_new`) y `POST /alerts/:id/seen` (deja la alerta sin novedades).
+- `GET /follows` (seguidas con `status`, `previous_status` y `has_update`). Abrir el detalle de una seguida la marca como vista.
+- `GET /me/novelties`: totales para los indicadores del Menú.
+
+Verificar con `npm test` y, con la migración aplicada, `npm run test:alerts`. Para probar la migración sin aplicarla: `npm run test:alerts -- --with-migration` (la aplica dentro de una transacción que se deshace).
