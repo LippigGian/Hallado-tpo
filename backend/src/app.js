@@ -15,7 +15,7 @@ export function createApp(database, registrationService, loginService, sessionTo
   if (sessionTokens) app.use('/publications', publicationRouter(database, sessionTokens));
   if (sessionTokens) app.use('/claims', claimRouter(database, sessionTokens));
   if (sessionTokens) app.use(alertRouter(database, sessionTokens));
-  if (sessionTokens) app.use('/history', historyRouter(database, sessionTokens));
+  if (sessionTokens) app.use(historyRouter(database, sessionTokens));
   app.use(express.json({ limit: '100kb' }));
 
   // Liveness: la API está encendida, independientemente de PostgreSQL.

@@ -35,10 +35,10 @@ test('solo quien recupera confirma, sobre un reclamo aceptado y una sola vez', (
 });
 
 test('serializeReturn indica el rol y si quien mira puede confirmar', () => {
-  assert.deepEqual(serializeReturn(ownerClaim, claimantId), { returned: false, returned_at: null, role: 'recupera', can_confirm: true });
-  assert.deepEqual(serializeReturn(ownerClaim, publisherId), { returned: false, returned_at: null, role: 'devuelve', can_confirm: false });
+  assert.deepEqual(serializeReturn(ownerClaim, claimantId), { returned: false, returned_at: null, role: 'recoverer', can_confirm: true });
+  assert.deepEqual(serializeReturn(ownerClaim, publisherId), { returned: false, returned_at: null, role: 'returner', can_confirm: false });
   const at = new Date('2026-11-03T15:00:00Z');
-  assert.deepEqual(serializeReturn({ ...ownerClaim, return_id: returnId, returned_at: at }, claimantId), { returned: true, returned_at: at, role: 'recupera', can_confirm: false });
+  assert.deepEqual(serializeReturn({ ...ownerClaim, return_id: returnId, returned_at: at }, claimantId), { returned: true, returned_at: at, role: 'recoverer', can_confirm: false });
   assert.equal(serializeReturn({ ...ownerClaim, status: 'pending' }, claimantId).can_confirm, false);
 });
 
@@ -103,7 +103,7 @@ test('POST /claims/:id/return: quien recupera confirma, se resuelve la publicaci
     const { status, body } = await post(`/claims/${claimId}/return`, claimantId);
     assert.equal(status, 200);
     assert.equal(body.claim.return.returned, true);
-    assert.equal(body.claim.return.role, 'recupera');
+    assert.equal(body.claim.return.role, 'recoverer');
     assert.equal(body.claim.return.can_confirm, false);
   });
   const insert = database.calls.find(call => /INSERT INTO public\.returns/.test(call.sql));

@@ -2,7 +2,9 @@
 // - Valoración: cada parte valora a la otra (positiva o negativa) una sola vez, sin editar.
 // - Agradecimiento: solo quien recuperó, a quien devolvió; es público en su perfil.
 // - Ambos dentro de los FEEDBACK_DAYS días posteriores a la devolución.
-export { FEEDBACK_DAYS } from './return-rules.js';
+
+// Plazo para valorar a la otra parte y para el agradecimiento público, desde la devolución.
+export const FEEDBACK_DAYS = 7;
 export const FEEDBACK_MESSAGE_MAX = 200;
 const RATING_VALUES = { positive: 1, negative: -1 };
 

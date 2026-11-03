@@ -99,10 +99,10 @@ try {
   check((await request(`/claims/${reclamoLlaves}/return`, { method: 'POST', token: ana.token })).status, 403);
   check((await request(`/claims/${reclamoPendiente}/return`, { method: 'POST', token: lucia.token })).status, 409);
   const devuelto = await request(`/claims/${reclamoLlaves}/return`, { method: 'POST', token: pedro.token });
-  check([devuelto.status, devuelto.body.claim.return.returned, devuelto.body.claim.return.role], [200, true, 'recupera']);
+  check([devuelto.status, devuelto.body.claim.return.returned, devuelto.body.claim.return.role], [200, true, 'recoverer']);
   check((await request(`/claims/${reclamoLlaves}/return`, { method: 'POST', token: pedro.token })).status, 409);
   const vistoPorAna = (await request(`/claims/${reclamoLlaves}`, { token: ana.token })).body.claim.return;
-  check([vistoPorAna.returned, vistoPorAna.role, vistoPorAna.can_confirm], [true, 'devuelve', false]);
+  check([vistoPorAna.returned, vistoPorAna.role, vistoPorAna.can_confirm], [true, 'returner', false]);
   check((await client.query('SELECT status FROM public.publications WHERE id=$1', [llaves])).rows[0].status, 'resolved');
   check((await request(`/claims/${reclamoDni}/return`, { method: 'POST', token: ana.token })).status, 200);
 
@@ -135,17 +135,17 @@ try {
   check((await request('/history?period=semana', { token: ana.token })).status, 400);
 
   // Valoraciones: cada parte a la otra, una vez, dentro de los 7 días.
-  check((await request(`/history/${caso1}/rating`, { method: 'POST', token: lucia.token, body: { value: 'positive' } })).status, 404);
-  check((await request(`/history/${caso1}/rating`, { method: 'POST', token: pedro.token, body: { value: 'positive', message: 'Muy amable' } })).status, 201);
-  check((await request(`/history/${caso1}/rating`, { method: 'POST', token: pedro.token, body: { value: 'negative' } })).status, 409);
-  check((await request(`/history/${caso1}/rating`, { method: 'POST', token: ana.token, body: { value: 'negative', message: 'Llegó una hora tarde' } })).status, 201);
-  check((await request(`/history/${caso2}/rating`, { method: 'POST', token: ana.token, body: { value: 'positive' } })).status, 409);
+  check((await request(`/returns/${caso1}/rating`, { method: 'POST', token: lucia.token, body: { value: 'positive' } })).status, 404);
+  check((await request(`/returns/${caso1}/rating`, { method: 'POST', token: pedro.token, body: { value: 'positive', message: 'Muy amable' } })).status, 201);
+  check((await request(`/returns/${caso1}/rating`, { method: 'POST', token: pedro.token, body: { value: 'negative' } })).status, 409);
+  check((await request(`/returns/${caso1}/rating`, { method: 'POST', token: ana.token, body: { value: 'negative', message: 'Llegó una hora tarde' } })).status, 201);
+  check((await request(`/returns/${caso2}/rating`, { method: 'POST', token: ana.token, body: { value: 'positive' } })).status, 409);
 
   // Agradecimiento: solo quien recuperó (Pedro, en el caso 1), una vez.
-  check((await request(`/history/${caso1}/thanks`, { method: 'POST', token: ana.token, body: { message: 'Gracias' } })).status, 403);
-  check((await request(`/history/${caso1}/thanks`, { method: 'POST', token: pedro.token, body: { message: '¡Gracias por cuidar mis llaves!' } })).status, 201);
-  check((await request(`/history/${caso1}/thanks`, { method: 'POST', token: pedro.token, body: { message: 'Otra vez' } })).status, 409);
-  check((await request(`/history/${caso2}/thanks`, { method: 'POST', token: ana.token, body: { message: 'Gracias' } })).status, 409);
+  check((await request(`/returns/${caso1}/thanks`, { method: 'POST', token: ana.token, body: { message: 'Gracias' } })).status, 403);
+  check((await request(`/returns/${caso1}/thanks`, { method: 'POST', token: pedro.token, body: { message: '¡Gracias por cuidar mis llaves!' } })).status, 201);
+  check((await request(`/returns/${caso1}/thanks`, { method: 'POST', token: pedro.token, body: { message: 'Otra vez' } })).status, 409);
+  check((await request(`/returns/${caso2}/thanks`, { method: 'POST', token: ana.token, body: { message: 'Gracias' } })).status, 409);
 
   // El historial refleja lo enviado y lo recibido.
   historial = (await request('/history', { token: ana.token })).body;

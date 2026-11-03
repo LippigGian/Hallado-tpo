@@ -15,7 +15,7 @@ export default function ClaimReturnSection({ claim, counterpartName, busy, onCon
       <View style={[styles.container, styles.done]}>
         <Text style={styles.title}>Devolución concretada</Text>
         <Text style={styles.text}>
-          {ret.role === 'recupera' ? `Recuperaste el objeto. ${counterpartName} te lo devolvió` : `Devolviste el objeto a ${counterpartName}`}
+          {ret.role === 'recoverer' ? `Recuperaste el objeto. ${counterpartName} te lo devolvió` : `Devolviste el objeto a ${counterpartName}`}
           {ret.returned_at ? ` el ${formatDateTime(new Date(ret.returned_at))}.` : '.'}
         </Text>
         <Text style={styles.text}>Durante 7 días pueden valorarse desde el Historial.</Text>
@@ -42,7 +42,7 @@ export default function ClaimReturnSection({ claim, counterpartName, busy, onCon
     );
   }
 
-  if (ret.role === 'devuelve' && claim.status === 'accepted') {
+  if (ret.role === 'returner' && claim.status === 'accepted') {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Devolución pendiente</Text>

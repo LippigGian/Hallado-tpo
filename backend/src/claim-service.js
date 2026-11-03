@@ -1,6 +1,7 @@
 import { CLAIM_RULES } from './claim-rules.js';
 import { syncPublicationStatus } from './claim-expiration.js';
 import { grantAcceptedClaimContact } from './profile-contact.js';
+import { SQL_COVER_PHOTO_ID } from './publication-search.js';
 
 const LIST_LIMIT = 100;
 
@@ -11,7 +12,7 @@ const SELECT_CLAIM = `
          p.category AS publication_category, p.neighborhood AS publication_neighborhood,
          p.address AS publication_address, p.latitude AS publication_latitude, p.longitude AS publication_longitude,
          p.verification_question, p.verification_answer AS expected_answer,
-         (SELECT ph.id FROM public.publication_photos ph WHERE ph.publication_id = p.id ORDER BY ph.sort_order LIMIT 1) AS cover_photo_id,
+         ${SQL_COVER_PHOTO_ID} AS cover_photo_id,
          claimant.name AS claimant_name, publisher.name AS publisher_name,
          ret.id AS return_id, ret.returned_at
     FROM public.claims c

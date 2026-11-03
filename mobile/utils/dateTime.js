@@ -12,6 +12,12 @@ export function formatDateTime(date) {
   return `${formatDate(date)} ${formatTime(date)}`;
 }
 
+// "dd/mm hh:mm" sin año, para avisos como "lista guardada el 03/11 14:05". Recibe milisegundos.
+export function formatShortDateTime(ms) {
+  const date = new Date(ms);
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)} ${formatTime(date)}`;
+}
+
 export function maskDate(text) {
   const digits = text.replace(/\D/g, '').slice(0, 8);
   if (digits.length <= 2) return digits;

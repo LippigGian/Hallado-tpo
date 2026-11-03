@@ -3,8 +3,7 @@
 // sin contar las publicaciones de la propia persona.
 import { MAX_ALERTS_PER_USER } from './alert-validation.js';
 import {
-  oppositeType, photoUrl, searchConditions, searchPublications, searchTerms,
-  SQL_APPROX_LAT, SQL_APPROX_LNG, SQL_OCCURRED_ON, SQL_PHOTO_IDS, SQL_STATUS, SQL_TIME_SLOT,
+  oppositeType, searchConditions, searchPublications, searchTerms, serializeListedPublication, SQL_LISTED_COLUMNS, SQL_STATUS,
 } from './publication-search.js';
 
 // Las fechas se devuelven como texto AAAA-MM-DD: `pg` convierte `date` a Date en la zona local
@@ -149,9 +148,7 @@ const SQL_FOLLOW_UPDATE = `(f.last_seen_status IS NOT NULL AND f.last_seen_statu
 
 export async function listFollows(database, userId) {
   const result = await database.query(
-    `SELECT p.id,p.type,p.title,p.category,p.neighborhood,p.occurred_at,${SQL_OCCURRED_ON} AS occurred_on,
-        ${SQL_TIME_SLOT} AS time_slot,${SQL_STATUS} AS status,${SQL_APPROX_LAT} AS approx_latitude,
-        ${SQL_APPROX_LNG} AS approx_longitude,p.created_at,${SQL_PHOTO_IDS} AS photo_ids,
+    `SELECT ${SQL_LISTED_COLUMNS},
         f.created_at AS followed_at,f.last_seen_status,${SQL_FOLLOW_UPDATE} AS has_update
       FROM public.publication_follows f JOIN public.publications p ON p.id=f.publication_id
       WHERE f.user_id=$1
@@ -160,19 +157,7 @@ export async function listFollows(database, userId) {
     [userId],
   );
   return result.rows.map(row => ({
-    id: row.id,
-    type: row.type,
-    title: row.title,
-    category: row.category,
-    neighborhood: row.neighborhood,
-    occurred_at: row.occurred_at,
-    occurred_on: row.occurred_on,
-    time_slot: row.time_slot,
-    status: row.status,
-    approx_latitude: row.approx_latitude,
-    approx_longitude: row.approx_longitude,
-    created_at: row.created_at,
-    photos: (row.photo_ids || []).map(photoId => ({ id: photoId, url: photoUrl(row.id, photoId) })),
+    ...serializeListedPublication(row),
     followed_at: row.followed_at,
     previous_status: row.last_seen_status,
     has_update: Boolean(row.has_update),

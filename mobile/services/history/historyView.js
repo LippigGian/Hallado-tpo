@@ -46,7 +46,7 @@ function limpiar(texto) {
   return typeof texto === 'string' ? texto.trim().replace(/\s+/g, ' ') : '';
 }
 
-// { error } o { value } listo para POST /history/:id/rating.
+// { error } o { value } listo para POST /returns/:id/rating.
 export function validarValoracion({ valor, mensaje }) {
   if (valor !== 'positive' && valor !== 'negative') return { error: 'Elegí si tu valoración es positiva o negativa.' };
   const texto = limpiar(mensaje);
@@ -54,7 +54,7 @@ export function validarValoracion({ valor, mensaje }) {
   return { value: texto ? { value: valor, message: texto } : { value: valor } };
 }
 
-// { error } o { value } listo para POST /history/:id/thanks.
+// { error } o { value } listo para POST /returns/:id/thanks.
 export function validarAgradecimiento({ mensaje }) {
   const texto = limpiar(mensaje);
   if (!texto) return { error: 'Escribí tu agradecimiento.' };

@@ -2,24 +2,11 @@
 // Los criterios son los del buscador del punto 3, pero la fecha llega siempre como rango
 // concreto (date_from/date_to): la app convierte "Hoy", "Últimos 3 días" o "Última semana" en
 // fechas al guardar. `date_preset` indica qué opción eligió la persona, solo para mostrarla.
-import { CATEGORIES } from './publication-search.js';
+import { CATEGORIES } from './publication-validation.js';
+import { todayInArgentina, validDate } from './dates.js';
 
 export const MAX_ALERTS_PER_USER = 10;
 export const DATE_PRESETS = ['hoy', '3dias', 'semana', 'rango'];
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const ZONE = 'America/Argentina/Buenos_Aires';
-
-function validDate(value) {
-  if (typeof value !== 'string' || !DATE_RE.test(value)) return false;
-  const [y, m, d] = value.split('-').map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d));
-  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
-}
-
-// Fecha de hoy en Argentina (AAAA-MM-DD), la misma zona con la que el buscador compara fechas.
-export function todayInArgentina(now = new Date()) {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: ZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
-}
 
 function optionalText(value, max, message) {
   if (value === undefined || value === null) return { value: null };

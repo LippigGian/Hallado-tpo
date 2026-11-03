@@ -1,12 +1,18 @@
-export const CATEGORIES = ['documents', 'keys', 'electronics', 'pets', 'clothing', 'other'];
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+import { CATEGORIES } from './publication-validation.js';
+import { publicationPhotoPath } from './publication-view.js';
+import { SQL_ZONE_AR, validDate } from './dates.js';
+
+// Las categorías se definen una sola vez, en la validación de publicaciones (punto 5).
+export { CATEGORIES };
 const LATLNG_RE = /^-?\d+(\.\d+)?$/;
 
-function validDate(value) {
-  if (!DATE_RE.test(value)) return false;
-  const [y, m, d] = value.split('-').map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d));
-  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+// Número de página de una query (?page=): 1 si no viene, null si es inválido. Lo comparten
+// el buscador y las coincidencias de una alerta.
+export function parsePage(value) {
+  if (value === undefined || value === '') return 1;
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) return null;
+  const page = Number(value);
+  return page >= 1 && page <= 500 ? page : null;
 }
 
 // Palabras clave -> términos de búsqueda: sin tildes, en minúsculas, de 2 letras o más, hasta 5.
@@ -80,12 +86,8 @@ export function parseSearchQuery(query = {}) {
   }
   if (sort === 'nearest' && lat === null) return { error: 'Para ordenar por cercanía indicá una ubicación.' };
 
-  let page = 1;
-  if (query.page !== undefined && query.page !== '') {
-    if (typeof query.page !== 'string' || !/^\d+$/.test(query.page)) return { error: 'Paginación inválida.' };
-    page = Number(query.page);
-    if (page < 1 || page > 500) return { error: 'Paginación inválida.' };
-  }
+  const page = parsePage(query.page);
+  if (!page) return { error: 'Paginación inválida.' };
   let pageSize = 10;
   if (query.page_size !== undefined && query.page_size !== '') {
     if (typeof query.page_size !== 'string' || !/^\d+$/.test(query.page_size)) return { error: 'Paginación inválida.' };
@@ -99,7 +101,7 @@ export function parseSearchQuery(query = {}) {
 // Esquema de publicaciones del punto 5 (006_publications.sql): occurred_at es fecha y hora,
 // address es la dirección exacta y el vencimiento se calcula con expires_at. Estas expresiones
 // derivan los campos que usan el buscador y el detalle sin guardar datos duplicados.
-const ZONA = "'America/Argentina/Buenos_Aires'";
+const ZONA = SQL_ZONE_AR;
 export const SQL_OCCURRED_ON = `to_char(p.occurred_at AT TIME ZONE ${ZONA},'YYYY-MM-DD')`;
 const SQL_OCCURRED_DATE = `(p.occurred_at AT TIME ZONE ${ZONA})::date`;
 export const SQL_TIME_SLOT = `CASE
@@ -112,9 +114,34 @@ export const SQL_STATUS = "CASE WHEN p.status = 'open' AND p.expires_at <= now()
 export const SQL_APPROX_LAT = 'round(p.latitude::numeric, 2)::double precision';
 export const SQL_APPROX_LNG = 'round(p.longitude::numeric, 2)::double precision';
 export const SQL_PHOTO_IDS = "coalesce((SELECT array_agg(f.id::text ORDER BY f.sort_order) FROM public.publication_photos f WHERE f.publication_id=p.id),'{}')";
+// Primera foto de la publicación `p` (portada), o NULL. La usan los reclamos y el historial.
+export const SQL_COVER_PHOTO_ID = '(SELECT ph.id FROM public.publication_photos ph WHERE ph.publication_id = p.id ORDER BY ph.sort_order LIMIT 1)';
 
-export function photoUrl(publicationId, photoId) {
-  return `/publications/${publicationId}/photos/${photoId}`;
+// Nombre histórico del buscador y el detalle; es la misma función de publication-view.js.
+export const photoUrl = publicationPhotoPath;
+
+// Columnas públicas de una publicación en un listado (buscador, alertas y seguidas) y su
+// serialización. Nunca incluyen la dirección exacta ni las coordenadas sin redondear.
+export const SQL_LISTED_COLUMNS = `p.id,p.type,p.title,p.category,p.neighborhood,p.occurred_at,${SQL_OCCURRED_ON} AS occurred_on,
+      ${SQL_TIME_SLOT} AS time_slot,${SQL_STATUS} AS status,${SQL_APPROX_LAT} AS approx_latitude,
+      ${SQL_APPROX_LNG} AS approx_longitude,p.created_at,${SQL_PHOTO_IDS} AS photo_ids`;
+
+export function serializeListedPublication(row) {
+  return {
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    category: row.category,
+    neighborhood: row.neighborhood,
+    occurred_at: row.occurred_at,
+    occurred_on: row.occurred_on,
+    time_slot: row.time_slot,
+    status: row.status,
+    approx_latitude: row.approx_latitude,
+    approx_longitude: row.approx_longitude,
+    created_at: row.created_at,
+    photos: (row.photo_ids || []).map(id => ({ id, url: photoUrl(row.id, id) })),
+  };
 }
 
 // Condiciones SQL de una búsqueda sobre `public.publications p`: solo publicaciones visibles
@@ -161,29 +188,15 @@ export async function searchPublications(database, filters) {
   const limitParam = param(pageSize);
   const offsetParam = param((page - 1) * pageSize);
 
-  const sql = `SELECT p.id,p.type,p.title,p.category,p.neighborhood,p.occurred_at,${SQL_OCCURRED_ON} AS occurred_on,${SQL_TIME_SLOT} AS time_slot,
-      ${SQL_STATUS} AS status,${SQL_APPROX_LAT} AS approx_latitude,${SQL_APPROX_LNG} AS approx_longitude,p.created_at,${distanceExpr} AS distance_km,
-      ${SQL_PHOTO_IDS} AS photo_ids,${isNewExpr} AS is_new,
+  const sql = `SELECT ${SQL_LISTED_COLUMNS},${distanceExpr} AS distance_km,${isNewExpr} AS is_new,
       count(*) OVER()::integer AS total
     FROM public.publications p WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ${limitParam} OFFSET ${offsetParam}`;
 
   const result = await database.query(sql, values);
   const total = result.rows[0]?.total ?? 0;
   const results = result.rows.map(row => ({
-    id: row.id,
-    type: row.type,
-    title: row.title,
-    category: row.category,
-    neighborhood: row.neighborhood,
-    occurred_at: row.occurred_at,
-    occurred_on: row.occurred_on,
-    time_slot: row.time_slot,
-    status: row.status,
-    approx_latitude: row.approx_latitude,
-    approx_longitude: row.approx_longitude,
+    ...serializeListedPublication(row),
     distance_km: row.distance_km,
-    created_at: row.created_at,
-    photos: (row.photo_ids || []).map(id => ({ id, url: photoUrl(row.id, id) })),
     ...(newSince ? { is_new: Boolean(row.is_new) } : {}),
   }));
   return { results, page, page_size: pageSize, total, has_more: page * pageSize < total };

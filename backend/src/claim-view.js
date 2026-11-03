@@ -1,7 +1,6 @@
 import { publicationPhotoPath } from './publication-view.js';
 import { serializeReturn } from './return-rules.js';
-
-const DEFAULT_NAME = 'Vecino de Hallado';
+import { displayName } from './user-view.js';
 
 export function serializeClaim(row, viewerId) {
   const isPublisher = row.publisher_id === viewerId;
@@ -29,8 +28,8 @@ export function serializeClaim(row, viewerId) {
     expires_at: row.expires_at,
     responded_at: row.responded_at,
     publication,
-    claimant: { id: row.claimant_id, name: row.claimant_name || DEFAULT_NAME },
-    publisher: { id: row.publisher_id, name: row.publisher_name || DEFAULT_NAME },
+    claimant: { id: row.claimant_id, name: displayName(row.claimant_name) },
+    publisher: { id: row.publisher_id, name: displayName(row.publisher_name) },
     verification_question: row.kind === 'owner' ? row.verification_question : null,
     verification_answer: row.verification_answer,
     description: row.description,
