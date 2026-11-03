@@ -22,7 +22,9 @@ export default function PublicationCard({ publicacion, onPress }) {
       <Text style={styles.titulo} numberOfLines={2}>{publicacion.title}</Text>
       <Text style={styles.texto}>{categoria} · {publicacion.neighborhood}</Text>
       <Text style={styles.texto}>Fecha del suceso: {formatearFecha(publicacion.occurred_on)}{franja ? ` · ${franja}` : ''}</Text>
-      <Text style={styles.textoSecundario}>Coordenadas aprox.: {publicacion.approx_latitude}, {publicacion.approx_longitude}</Text>
+      {typeof publicacion.approx_latitude === 'number' && typeof publicacion.approx_longitude === 'number' && (
+        <Text style={styles.textoSecundario}>Coordenadas aprox.: {publicacion.approx_latitude}, {publicacion.approx_longitude}</Text>
+      )}
       {typeof publicacion.distance_km === 'number' && <Text style={styles.textoSecundario}>a {publicacion.distance_km} km</Text>}
       {publicacion.status === 'claimed' && <View style={styles.insignia}><Text style={styles.insigniaTexto}>En reclamo</Text></View>}
     </Contenedor>

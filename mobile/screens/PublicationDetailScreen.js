@@ -117,7 +117,7 @@ export default function PublicationDetailScreen({ route, navigation }) {
         <Text style={styles.titulo}>{publicacion.title}</Text>
         <Text style={styles.texto}>{etiquetaCategoria(publicacion.category)} · {publicacion.neighborhood}</Text>
         <Text style={styles.texto}>Fecha del suceso: {textoFechaSuceso(publicacion)}</Text>
-        <Text style={styles.textoSecundario}>Coordenadas aprox.: {textoCoordenadas(publicacion)}</Text>
+        {!!textoCoordenadas(publicacion) && <Text style={styles.textoSecundario}>Coordenadas aprox.: {textoCoordenadas(publicacion)}</Text>}
         {!!publicacion.description && <Text style={[styles.texto, styles.descripcion]}>{publicacion.description}</Text>}
 
         {mostrarExacta

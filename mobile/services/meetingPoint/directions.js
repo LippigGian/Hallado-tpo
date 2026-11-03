@@ -3,8 +3,16 @@
 // está instalado, usa la app de mapas por defecto y, como último recurso, Google Maps web.
 import { Linking, Platform } from 'react-native';
 
+// Sin ciudad, Google Maps puede tomar solo una parte ("Serrano" en vez de "Plaza Serrano, Palermo").
+const CIUDAD = 'Buenos Aires, Argentina';
+
+export function conCiudad(direccion) {
+  const texto = direccion.trim();
+  return /buenos aires|caba|capital federal|argentina/i.test(texto) ? texto : `${texto}, ${CIUDAD}`;
+}
+
 function destinoDe({ direccion, latitud, longitud }) {
-  if (direccion && direccion.trim()) return direccion.trim();
+  if (direccion && direccion.trim()) return conCiudad(direccion);
   if (Number.isFinite(latitud) && Number.isFinite(longitud)) return `${latitud},${longitud}`;
   return null;
 }
