@@ -1,4 +1,5 @@
 import { publicationPhotoPath } from './publication-view.js';
+import { serializeReturn } from './return-rules.js';
 
 const DEFAULT_NAME = 'Vecino de Hallado';
 
@@ -36,6 +37,8 @@ export function serializeClaim(row, viewerId) {
     found_neighborhood: row.found_neighborhood,
     photo_url: row.has_photo ? `/claims/${row.id}/photo` : null,
     ...(isPublisher && row.kind === 'owner' ? { expected_answer: row.expected_answer } : {}),
+    // Punto 10: devolución concretada (la confirma quien recupera el objeto).
+    return: serializeReturn(row, viewerId),
   };
 }
 

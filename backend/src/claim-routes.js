@@ -10,6 +10,7 @@ import { findPublication } from './publication-service.js';
 import { isUuid } from './uuid.js';
 import { serializeAgreement, validateProposal } from './meeting-point-rules.js';
 import { acceptLastProposal, addProposal, listProposals } from './meeting-point-service.js';
+import { confirmReturn } from './return-service.js';
 
 const CREATE_BODY_LIMIT = '4mb';
 
@@ -30,6 +31,14 @@ const MEETING_FAILURES = {
   own_turn: { status: 409, error: 'Esperá la respuesta de la otra persona antes de proponer otro punto.' },
   no_proposal: { status: 409, error: 'Todavía no hay un punto de encuentro propuesto.' },
   own_proposal: { status: 409, error: 'No podés aceptar tu propia propuesta.' },
+};
+
+// Punto 10: devolución concretada.
+const RETURN_FAILURES = {
+  not_found: { status: 404, error: 'Reclamo no encontrado.' },
+  claim_not_accepted: { status: 409, error: 'La devolución se confirma una vez aceptado el reclamo.' },
+  not_recoverer: { status: 403, error: 'La devolución la confirma quien recupera el objeto.' },
+  already_returned: { status: 409, error: 'La devolución ya fue confirmada.' },
 };
 
 const DECISION_FAILURES = {
@@ -175,6 +184,18 @@ export function claimRouter(database, tokens) {
       await sendAgreement(res, claim, req.userId);
     } catch {
       res.status(503).json({ error: 'No se pudo confirmar el punto de encuentro. Intentá nuevamente.' });
+    }
+  });
+
+  router.post('/:id/return', ...authenticated, async (req, res) => {
+    if (!isUuid(req.params.id)) return res.status(400).json({ error: 'Identificador inválido.' });
+    try {
+      const result = await confirmReturn(database, req.params.id, req.userId);
+      const failure = RETURN_FAILURES[result.outcome];
+      if (failure) return res.status(failure.status).json({ error: failure.error });
+      res.json({ claim: serializeClaim(await findClaim(database, req.params.id), req.userId) });
+    } catch {
+      res.status(503).json({ error: 'No se pudo confirmar la devolución. Intentá nuevamente.' });
     }
   });
 
