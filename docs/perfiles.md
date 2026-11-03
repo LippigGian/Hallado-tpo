@@ -38,7 +38,7 @@ Para cambiar la foto incluir `photo: { "base64": "...", "mimeType": "image/jpeg"
 
 ## Integración con las partes del grupo
 
-La edición, vista pública, agregación de reputación y control de acceso están implementados. Para alimentarlos con casos reales faltan los módulos de reclamos, devoluciones y valoraciones. No hay endpoints públicos para otorgarse reputación o permisos.
+La edición, vista pública, agregación de reputación y control de acceso están implementados. Los alimentan los reclamos (punto 7) y las devoluciones y valoraciones (punto 10, [historial-valoraciones.md](historial-valoraciones.md)). No hay endpoints públicos para otorgarse reputación o permisos.
 
 ### Reclamos
 
@@ -54,6 +54,8 @@ Esto autoriza ambas direcciones de consulta. Si se revoca la aceptación, llamar
 Desde la futura pantalla de reclamo aceptado, usar el endpoint contact para mostrar el teléfono cuando corresponda. Mientras ese módulo no exista, ninguna cuenta tiene permisos de contacto por defecto.
 
 ### Devoluciones y valoraciones
+
+> Implementado en el punto 10 ([historial-valoraciones.md](historial-valoraciones.md)). En los tres tipos de evento, `sourceId` es el id de `returns`; como `user_id` es la persona valorada, el índice único admite una valoración en cada dirección. El mensaje de valoraciones y agradecimientos se limita a 200 caracteres en la API. Lo que sigue es la guía original de integración.
 
 ```js
 import { recordReputationEvent } from './reputation.js';

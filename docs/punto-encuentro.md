@@ -36,4 +36,4 @@ Una vez aceptado un reclamo (punto 7), las dos personas acuerdan dónde y cuánd
 5. A ve la alternativa y la acepta. Las dos cuentas ven "Punto de encuentro confirmado" y el historial.
 6. "Cómo llegar" abre Google Maps en navegación. En el emulador puede no encontrar ruta porque su ubicación por defecto está en California; en un celular en Buenos Aires inicia la navegación.
 
-La devolución concretada y las valoraciones son del punto 10: al cerrar, pasar la publicación a `resolved` y registrar la reputación con `recordReputationEvent`.
+La devolución concretada y las valoraciones son del punto 10 ([historial-valoraciones.md](historial-valoraciones.md)). Quien recupera la confirma desde el detalle del reclamo, y a partir de ahí la app oculta esta sección.

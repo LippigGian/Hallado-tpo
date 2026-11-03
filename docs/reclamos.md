@@ -87,7 +87,7 @@ App (`mobile/`):
 
 - **Detalle de la publicación (punto 4)**: el botón "Es mío" o "Lo encontré" debe llamar a `navigation.navigate('CreateClaim', { publicationId })`. Para decidir si mostrarlo y con qué texto: `isClaimable(publication)`, `claimKindFor(publication.type)` y `CLAIM_ACTION_LABELS`, todos en `config/claimOptions.js`. Cuando exista, se puede quitar `ClaimDemoScreen` y su botón en Inicio.
 - **Punto de encuentro (punto 8)**: parte de un reclamo `accepted`. Quien tiene el objeto es el publicador si la publicación es de algo encontrado, y quien reclamó si es de algo perdido (`claim.kind === 'finder'`).
-- **Devoluciones y valoraciones (punto 10)**: al concretar la devolución, pasar la publicación a `resolved` y registrar la reputación con `recordReputationEvent` (punto 2).
+- **Devoluciones y valoraciones (punto 10)**: implementado en [historial-valoraciones.md](historial-valoraciones.md). Quien recupera confirma con `POST /claims/:id/return` sobre un reclamo aceptado; la publicación pasa a `resolved` y se registra la reputación. Cada reclamo incluye el campo `return`, y en la app se muestra como "Devuelto".
 - **Alertas y seguidas (punto 9)**: pueden basarse en `publications.status` (`claimed` y `resolved`).
 
 ## Cómo probar
