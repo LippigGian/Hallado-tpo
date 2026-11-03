@@ -105,7 +105,10 @@ export default function MyPublicationsScreen({ navigation, route }) {
       ListHeaderComponent={header}
       ListEmptyComponent={error ? null : <Text style={styles.empty}>Todavía no publicaste nada. Las publicaciones vencen a los 30 días y podés renovarlas.</Text>}
       renderItem={({ item }) => (
-        <PublicationCard publication={item}>
+        <PublicationCard
+          publication={item}
+          onPress={() => navigation.navigate('PublicationDetail', { publicationId: item.id })}
+        >
           {(item.status === 'open' || item.status === 'expired') && (
             <PrimaryButton
               title="Renovar por 30 días"
