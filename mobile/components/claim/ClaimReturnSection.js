@@ -4,8 +4,9 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../config/theme';
 import { formatDateTime } from '../../utils/dateTime';
 import ConnectionRequiredButton from '../offline/ConnectionRequiredButton';
+import PrimaryButton from '../PrimaryButton';
 
-export default function ClaimReturnSection({ claim, counterpartName, busy, onConfirm }) {
+export default function ClaimReturnSection({ claim, counterpartName, busy, onConfirm, onOpenHistory }) {
   const ret = claim.return;
   if (!ret) return null;
 
@@ -18,6 +19,7 @@ export default function ClaimReturnSection({ claim, counterpartName, busy, onCon
           {ret.returned_at ? ` el ${formatDateTime(new Date(ret.returned_at))}.` : '.'}
         </Text>
         <Text style={styles.text}>Durante 7 días pueden valorarse desde el Historial.</Text>
+        {!!onOpenHistory && <PrimaryButton title="Ir al historial" variant="secondary" onPress={onOpenHistory} />}
       </View>
     );
   }

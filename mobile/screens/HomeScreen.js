@@ -51,7 +51,7 @@ export default function HomeScreen({ navigation }) {
   return <ScrollView contentContainerStyle={styles.container}>
     <Text style={styles.title}>¡Bienvenido a Hallado!</Text>
     <Text style={styles.text}>Sesión iniciada como {user.email}</Text>
-    <Text style={styles.text}>Desde acá accedés a la búsqueda, tus publicaciones, tus alertas, las publicaciones que seguís, tus reclamos, tu perfil y las pantallas de prueba.</Text>
+    <Text style={styles.text}>Desde acá accedés a la búsqueda, tus publicaciones, tus alertas, las publicaciones que seguís, tus reclamos, tu historial, tu perfil y las pantallas de prueba.</Text>
     <MenuButton title="Buscar" disabled={busy} onPress={() => navigation.navigate('Search')} />
     <MenuButton title="Publicar pérdida o hallazgo" disabled={busy} onPress={() => navigation.navigate('PublishPublication')} />
     <MenuButton title="Mis publicaciones" disabled={busy} onPress={() => navigation.navigate('MyPublications')} />
@@ -60,6 +60,7 @@ export default function HomeScreen({ navigation }) {
     <MenuButton title="Seguidas" disabled={busy} onPress={() => navigation.navigate('FollowedPublications')}
       contador={seguidasConCambios} descripcionContador={`${seguidasConCambios} con cambios de estado`} />
     <MenuButton title="Mis reclamos" disabled={busy} onPress={() => navigation.navigate('MyClaims')} />
+    <MenuButton title="Historial" disabled={busy} onPress={() => navigation.navigate('History')} />
     <MenuButton title="Reclamar (prueba)" disabled={busy} onPress={() => navigation.navigate('ClaimDemo')} />
     <MenuButton title="Mi perfil" disabled={busy} onPress={() => navigation.navigate('Profile')} />
     <MenuButton title="Configuración" disabled={busy} onPress={() => navigation.navigate('Settings')} />

@@ -133,7 +133,8 @@ export default function ClaimDetailScreen({ navigation, route }) {
       )}
 
       {accepted && (
-        <ClaimReturnSection claim={claim} counterpartName={counterpart.name} busy={busy} onConfirm={returnConfirmed} />
+        <ClaimReturnSection claim={claim} counterpartName={counterpart.name} busy={busy} onConfirm={returnConfirmed}
+          onOpenHistory={() => navigation.navigate('History')} />
       )}
 
       {/* Con la devolución concretada ya no hay nada que coordinar. */}

@@ -12,6 +12,8 @@ import ClaimDemoScreen from '../screens/ClaimDemoScreen';
 import MyAlertsScreen from '../screens/MyAlertsScreen';
 import AlertResultsScreen from '../screens/AlertResultsScreen';
 import FollowedPublicationsScreen from '../screens/FollowedPublicationsScreen';
+import HistoryScreen from '../screens/HistoryScreen';
+import HistoryFeedbackScreen from '../screens/HistoryFeedbackScreen';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import HomeScreen from '../screens/HomeScreen';
@@ -60,6 +62,8 @@ export default function AppNavigator() {
         <Stack.Screen name="MyAlerts" component={MyAlertsScreen} options={{ title: 'Mis alertas' }} />
         <Stack.Screen name="AlertResults" component={AlertResultsScreen} options={{ title: 'Coincidencias' }} />
         <Stack.Screen name="FollowedPublications" component={FollowedPublicationsScreen} options={{ title: 'Seguidas' }} />
+        <Stack.Screen name="History" component={HistoryScreen} options={{ title: 'Historial' }} />
+        <Stack.Screen name="HistoryFeedback" component={HistoryFeedbackScreen} options={({ route }) => ({ title: route.params?.tipo === 'thanks' ? 'Agradecer' : 'Valorar' })} />
       </> : <>
       <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Hallado' }} />
       <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Crear cuenta' }} />
